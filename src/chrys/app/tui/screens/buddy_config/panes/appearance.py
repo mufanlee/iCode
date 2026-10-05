@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.widget import Widget
 from textual.widgets import Button, Static
 
@@ -68,33 +69,48 @@ class AppearancePane(Widget):
 
     def compose(self) -> ComposeResult:
         for row in self.frame_rows():
-            yield Static(
-                Text(f"{row.frame}: {self._state_label(row.state)}"),
-                classes="frame-row",
-                id=f"frame-state-{row.frame}",
-            )
-            yield Button(Text(self._render_message(_IMPORT.bind())), id=f"{_IMPORT_PREFIX}{row.frame}")
-            yield Button(Text(self._render_message(_REMOVE.bind())), id=f"{_REMOVE_PREFIX}{row.frame}")
+            with Horizontal(classes="frame-row"):
+                yield Static(
+                    Text(f"{row.frame}: {self._state_label(row.state)}"),
+                    id=f"frame-state-{row.frame}",
+                )
+                yield Button(Text(self._render_message(_IMPORT.bind())), id=f"{_IMPORT_PREFIX}{row.frame}")
+                yield Button(Text(self._render_message(_REMOVE.bind())), id=f"{_REMOVE_PREFIX}{row.frame}")
         yield Button(Text(self._render_message(_OPEN.bind())), id=_OPEN_FOLDER_ID)
         yield Static(Text(self._render_message(_HINT.bind())), classes="frame-row")
 
     async def import_into(self, frame: int, source: Path) -> None:
         """Replace one frame's artwork with the art at *source*."""
         await self._ports.import_frame(frame, source)
+        self._refresh_frame_state(frame)
 
-    async def remove(self, frame: int) -> None:  # ty: ignore[invalid-method-override]  # The domain name "remove a frame" shadows Widget.remove(); the pane owns no removals of itself.
+    async def remove_frame(self, frame: int) -> None:
         """Drop one frame's custom artwork, restoring the built-in sprite."""
         await self._ports.remove_frame(frame)
+        self._refresh_frame_state(frame)
 
     @on(Button.Pressed)
     async def _on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
         button_id = event.button.id or ""
         if button_id.startswith(_IMPORT_PREFIX):
-            self._pick_frame_art(int(button_id.removeprefix(_IMPORT_PREFIX)))
+            frame = self._parse_frame(button_id, _IMPORT_PREFIX)
+            if frame is not None:
+                self._pick_frame_art(frame)
         elif button_id.startswith(_REMOVE_PREFIX):
-            await self.remove(int(button_id.removeprefix(_REMOVE_PREFIX)))
+            frame = self._parse_frame(button_id, _REMOVE_PREFIX)
+            if frame is not None:
+                await self.remove_frame(frame)
         elif button_id == _OPEN_FOLDER_ID:
             self._ports.open_assets_dir()
+
+    @staticmethod
+    def _parse_frame(button_id: str, prefix: str) -> int | None:
+        suffix = button_id.removeprefix(prefix)
+        if not suffix.isdigit():
+            return None
+        frame = int(suffix)
+        return frame if 0 <= frame < FRAME_COUNT else None
 
     def _pick_frame_art(self, frame: int) -> None:
         """Ask for a PNG, then import the chosen file into *frame*."""
@@ -111,6 +127,12 @@ class AppearancePane(Widget):
             ),
             on_result,
         )
+
+    def _refresh_frame_state(self, frame: int) -> None:
+        if not self.is_mounted:
+            return
+        node = self.query_one(f"#frame-state-{frame}", Static)
+        node.update(Text(f"{frame}: {self._state_label(self._ports.frame_state(frame))}"))
 
     def _state_label(self, state: FrameState) -> str:
         reference = _STATE_CUSTOM if state is FrameState.CUSTOM else _STATE_BUILTIN

@@ -168,12 +168,82 @@ async def test_appearance_remove() -> None:
     from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
 
     ports = StubPorts()
-    ports.custom_frames = {4}
     pane = AppearancePane(ports, locale_controller=None)
 
-    await pane.remove(4)
+    await pane.remove_frame(4)
 
     assert ("remove", 4) in ports.calls
+
+
+def _appearance_pane_app(ports: StubPorts) -> App[None]:
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    class AppearancePaneApp(TuiVariableDefaultsMixin, App[None]):
+        def compose(self) -> ComposeResult:
+            yield AppearancePane(ports, locale_controller=None)
+
+    return AppearancePaneApp()
+
+
+async def test_appearance_buttons_route_to_ports() -> None:
+    from textual.widgets import Button
+
+    ports = StubPorts()
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pilot.app.query_one("#frame-remove-3", Button).press()
+        pilot.app.query_one("#buddy-config-open-folder", Button).press()
+        await wait_for(
+            lambda: ("remove", 3) in ports.calls and ("open_dir", None) in ports.calls,
+            pilot=pilot,
+            description="dispatcher routes frame buttons to ports",
+        )
+
+
+async def test_appearance_import_button_opens_the_picker() -> None:
+    from textual.widgets import Button
+
+    from chrys.app.tui.screens.dialogs.file_picker import FilePicker
+
+    ports = StubPorts()
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pilot.app.query_one("#frame-import-2", Button).press()
+        await wait_for(
+            lambda: isinstance(pilot.app.screen, FilePicker),
+            pilot=pilot,
+            description="the import button opens the frame artwork picker",
+        )
+
+
+async def test_appearance_shows_custom_state_for_an_imported_frame() -> None:
+    from textual.widgets import Static
+
+    ports = StubPorts(custom_frames={4})
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        node = pilot.app.query_one("#frame-state-4", Static)
+        assert "Custom" in str(node.content)
+
+
+async def test_appearance_refreshes_a_row_state_after_import() -> None:
+    from pathlib import Path
+
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pane = pilot.app.query_one(AppearancePane)
+        node = pilot.app.query_one("#frame-state-2", Static)
+        assert "Built-in" in str(node.content)
+
+        ports.custom_frames = {2}
+        await pane.import_into(2, Path("/tmp/art.png"))
+
+        assert "Custom" in str(node.content)
 
 
 def test_appearance_lists_six_frames() -> None:
