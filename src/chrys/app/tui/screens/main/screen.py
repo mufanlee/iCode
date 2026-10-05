@@ -110,7 +110,6 @@ from chrys.app.tui.widgets.chrome.input_bar import InputBar
 from chrys.app.tui.widgets.chrome.status_bar import StatusBar
 from chrys.app.tui.widgets.chrome.suggestion_list import SuggestionList
 from chrys.app.tui.widgets.editor import MESSAGE_EDITOR_MAX_CHARACTERS, EditorBufferSnapshot, EditorMode
-from chrys.app.tui.widgets.sidebar.buddy import BuddyPanel
 from chrys.app.tui.widgets.sidebar.context import ContextUsageState
 from chrys.app.tui.widgets.sidebar.panel import SidebarPanel
 from chrys.app.tui.widgets.sidebar.tasks import TodoListState
@@ -170,6 +169,7 @@ _SESSIONS_BINDING = msg("tui.binding.sessions", fallback="Sessions")
 _AGENTS_BINDING = msg("tui.binding.agents", fallback="Agents")
 _MODELS_BINDING = msg("tui.binding.models", fallback="Models")
 _LOGS_BINDING = msg("tui.binding.logs", fallback="Logs")
+_BUDDY_CONFIG_BINDING = msg("tui.binding.buddy_config", fallback="Buddy")
 _HELP_BINDING = msg("tui.binding.help", fallback="Help")
 _SIDEBAR_BINDING = msg("tui.binding.sidebar", fallback="Sidebar")
 _THEMES_BINDING = msg("tui.binding.themes", fallback="Themes")
@@ -223,6 +223,7 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         localized_binding("f2", "agents_config", _AGENTS_BINDING, priority=True),
         localized_binding("f4", "models_config", _MODELS_BINDING, priority=True),
         localized_binding("f6", "show_log_viewer", _LOGS_BINDING, priority=True),
+        localized_binding("f7", "buddy_config", _BUDDY_CONFIG_BINDING, priority=True),
         localized_binding("f8", "open_guide", _HELP_BINDING, priority=True),
         Binding("ctrl+r", "prompt_history", show=False, priority=True),
         localized_binding("f9", "pick_theme", _THEMES_BINDING, priority=True),
@@ -2204,11 +2205,6 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         if not self._workflow.workflow_mode:
             self._config_actions.on_model_tag_clicked(event.mode)
 
-    @on(BuddyPanel.ConfigRequested)
-    def _on_buddy_config_requested(self, _event: BuddyPanel.ConfigRequested) -> None:
-        """Open the Buddy configuration dialog from the sidebar's ⚙ button."""
-        self.open_buddy_config()
-
     @work(thread=False)
     async def _switch_agent_profile(self, profile_name: str) -> None:
         """Publish an AgentProfileSwitch event to the backend."""
@@ -2273,6 +2269,10 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
     def action_settings(self) -> None:
         """Open the Settings dialog (F10)."""
         self._open_settings()
+
+    def action_buddy_config(self) -> None:
+        """Open the Buddy configuration dialog (F7)."""
+        self.open_buddy_config()
 
     def action_runtime_details(self) -> None:
         """Open the active runtime details modal."""

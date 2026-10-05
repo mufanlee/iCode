@@ -7,10 +7,9 @@ from __future__ import annotations
 import pytest
 from textual.app import App, ComposeResult
 from textual.content import Content
-from textual.widgets import Button, Static
+from textual.widgets import Static
 
 from chrys.app.tui.i18n import LocaleController
-from chrys.app.tui.util.visibility import is_widget_shown
 from chrys.app.tui.widgets.sidebar import buddy as buddy_module
 from chrys.app.tui.widgets.sidebar import context as context_module
 from chrys.app.tui.widgets.sidebar import tasks as tasks_module
@@ -22,7 +21,6 @@ from chrys.app.tui.widgets.sidebar.toc import ConversationToc
 from chrys.foundation.config.settings import Settings
 from chrys.foundation.i18n import MessageRef
 from tests.support.buddies import a_buddy
-from tests.support.waiting import wait_for
 
 
 class SidebarEmptyStatesApp(App):
@@ -181,19 +179,3 @@ async def test_buddy_info_shows_the_persona_in_the_users_language(monkeypatch: p
             "<tui.sidebar.buddy.rarity>",
             "“<tui.buddy.persona.focus>”",
         ]
-
-
-@pytest.mark.asyncio
-async def test_the_configure_button_is_visible_with_no_buddy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Configuration is always reachable: the button survives the no-buddy empty state."""
-
-    class BuddyOnlyApp(App):
-        def compose(self) -> ComposeResult:
-            yield BuddyPanel()
-
-    monkeypatch.setattr("chrys.app.tui.widgets.sidebar.buddy.current_buddy", lambda: None)
-
-    async with BuddyOnlyApp().run_test(size=(40, 30)) as pilot:
-        button = pilot.app.query_one("#buddy-configure", Button)
-        await wait_for(lambda: is_widget_shown(button), pilot=pilot, description="the configure button is shown")
-        assert button.display

@@ -7,16 +7,10 @@ from __future__ import annotations
 from random import Random
 from typing import TYPE_CHECKING
 
-import pytest
-from textual.widgets import Button, TabbedContent
-
 from chrys.app.features.buddy import actions
 from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
 from chrys.app.tui.screens.main.buddy_command import BuddyCommandController
-from chrys.app.tui.widgets.sidebar.buddy import BuddyPanel
-from chrys.app.tui.widgets.sidebar.panel import SidebarPanel
 from tests.support.tui_app_harness import make_chrys_app
-from tests.support.tui_helpers import click_when_settled
 from tests.support.waiting import wait_for
 
 if TYPE_CHECKING:
@@ -54,31 +48,15 @@ def test_the_config_slash_command_opens_the_dialog() -> None:
     assert view.opened == 1
 
 
-async def test_the_sidebar_button_opens_the_dialog_without_petting(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    petted: list[str] = []
-    monkeypatch.setattr(BuddyPanel, "pet", lambda _panel: petted.append("pet"))
+async def test_the_footer_binding_opens_the_dialog(tmp_path: Path) -> None:
     actions.hatch(Random(1))
     app = make_chrys_app(tmp_path)
 
     async with app.run_test(size=(140, 50)) as pilot:
-        main = app.screen
-        assert main is not None
-        sidebar = main.query_one(SidebarPanel)
-        sidebar.focus_tab("tab-buddy")
-        await wait_for(
-            lambda: sidebar.query_one(TabbedContent).active == "tab-buddy",
-            pilot=pilot,
-            description="the Buddy tab is open",
-        )
-        assert main.query_one("#buddy-configure", Button).is_mounted
-
-        await click_when_settled(pilot, "#buddy-configure")
+        await pilot.press("f7")
 
         await wait_for(
             lambda: isinstance(app.screen, BuddyConfigDialog),
             pilot=pilot,
             description="the Buddy configuration dialog opened",
         )
-        assert petted == []

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 from textual.app import App, ComposeResult
-from textual.widgets import Button, Static
+from textual.widgets import Static
 
 from chrys.app.features.buddy.model import Rarity, Species
 from chrys.app.tui.util.visibility import is_widget_shown
@@ -22,10 +22,10 @@ class _BuddyApp(App[None]):
 
 
 def _block_height(panel: BuddyPanel) -> int:
-    """Rows from the portrait's top to the last content's bottom margin: what the panel aligns."""
+    """Rows from the portrait's top to the last detail's bottom margin: what the panel aligns."""
     sprite = panel.query_one("#buddy-sprite", Static)
-    configure = panel.query_one("#buddy-configure", Button)
-    return configure.region.bottom + configure.styles.margin.bottom - sprite.region.y
+    info = panel.query_one("#buddy-info", Static)
+    return info.region.bottom + info.styles.margin.bottom - sprite.region.y
 
 
 def _top_gap(panel: BuddyPanel) -> int:

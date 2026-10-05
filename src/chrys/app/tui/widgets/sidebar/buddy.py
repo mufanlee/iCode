@@ -10,12 +10,10 @@ from time import monotonic
 from typing import TYPE_CHECKING, Self
 
 from rich.text import Text
-from textual import on
 from textual.app import ComposeResult
-from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Button, Static
+from textual.widgets import Static
 
 from chrys.app.features.buddy.actions import current_buddy, record_pet
 from chrys.app.features.buddy.animation import get_idle_frame, get_pet_frame
@@ -58,7 +56,6 @@ _BUDDY_SPECIES = msg("tui.sidebar.buddy.species", fallback="Species: {species}")
 _BUDDY_RARITY = msg("tui.sidebar.buddy.rarity", fallback="Rarity: {rarity}")
 _BUDDY_SHINY = msg("tui.sidebar.buddy.shiny", fallback="✨ Shiny!")
 _BUDDY_NOTIFICATIONS_MUTED = msg("tui.sidebar.buddy.notifications_muted", fallback="🔇 Notifications muted")
-_BUDDY_CONFIGURE = msg("tui.sidebar.buddy.configure", fallback="Configure")
 
 _CONTENT_IDS = ("#buddy-sprite", "#buddy-level", "#buddy-info", "#buddy-status")
 
@@ -93,9 +90,6 @@ class _BuddySprite(Static):
 
 class BuddyPanel(Widget):
     """The buddy's corner of the sidebar: its animated portrait, how it is doing, and a click to pet it."""
-
-    class ConfigRequested(Message):
-        """The user asked to open the Buddy configuration dialog."""
 
     DEFAULT_CSS = """
     BuddyPanel {
@@ -137,10 +131,6 @@ class BuddyPanel(Widget):
         text-align: center;
         margin: 1 0;
     }
-    BuddyPanel #buddy-configure {
-        width: 100%;
-        margin: 1 0 0 0;
-    }
     BuddyPanel .buddy-empty {
         width: 1fr;
         height: 1fr;
@@ -174,9 +164,6 @@ class BuddyPanel(Widget):
         yield Static("", id="buddy-level")
         yield Static("", id="buddy-status")
         yield Static("", id="buddy-info")
-        # Deliberately not part of _CONTENT_IDS: configuration is always available,
-        # so the button stays visible even in the no-buddy empty state.
-        yield Button(self._render_message(_BUDDY_CONFIGURE.bind()), id="buddy-configure", classes="buddy-configure")
 
     def on_mount(self) -> None:
         """Start the animation timers and show the saved buddy."""
@@ -226,7 +213,6 @@ class BuddyPanel(Widget):
         """Retranslate the visible empty, level, and interaction status chrome."""
         if self.is_mounted:
             self._show(".buddy-empty", Text(self._render_message(_BUDDY_EMPTY.bind())))
-            self.query_one("#buddy-configure", Button).label = self._render_message(_BUDDY_CONFIGURE.bind())
             self._redraw()
 
     def watch_buddy(self, _buddy: Buddy | None) -> None:
@@ -374,17 +360,8 @@ class BuddyPanel(Widget):
             await asyncio.to_thread(record_pet)
             self.reload()
 
-    @on(Button.Pressed, "#buddy-configure")
-    def _on_configure_pressed(self, event: Button.Pressed) -> None:
-        """Open the Buddy configuration dialog instead of petting the buddy."""
-        event.stop()
-        self.post_message(self.ConfigRequested())
-
     def on_click(self, event: Click) -> None:
         """Pet the buddy on click."""
-        # Defence-in-depth over Button's own click stop: a configure click must never pet the buddy.
-        if event.widget is not None and event.widget.id == "buddy-configure":
-            return
         if self.buddy is not None:
             self.pet()
             event.stop()
