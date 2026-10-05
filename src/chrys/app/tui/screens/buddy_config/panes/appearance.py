@@ -153,9 +153,19 @@ class AppearancePane(VerticalScroll):
                     Text(f"{row.frame}: {self._state_label(row.state)}"),
                     id=f"frame-state-{row.frame}",
                 )
-                yield Button(Text(self._render_message(_IMPORT.bind())), id=f"{_IMPORT_PREFIX}{row.frame}")
-                yield Button(Text(self._render_message(_REMOVE.bind())), id=f"{_REMOVE_PREFIX}{row.frame}")
-        yield Button(Text(self._render_message(_OPEN.bind())), id=_OPEN_FOLDER_ID)
+                yield Button(
+                    Text(self._render_message(_IMPORT.bind())),
+                    id=f"{_IMPORT_PREFIX}{row.frame}",
+                    variant="primary",
+                    flat=True,
+                )
+                yield Button(
+                    Text(self._render_message(_REMOVE.bind())),
+                    id=f"{_REMOVE_PREFIX}{row.frame}",
+                    variant="error",
+                    flat=True,
+                )
+        yield Button(Text(self._render_message(_OPEN.bind())), id=_OPEN_FOLDER_ID, variant="primary", flat=True)
         yield Static(
             Text(self._render_message(_HINT.bind())),
             id=_HINT_ID,

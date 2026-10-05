@@ -67,7 +67,7 @@ class ProfilePane(Widget):
     def compose(self) -> ComposeResult:
         yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
         yield Static("", id="buddy-config-facts")
-        yield Button(Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch")
+        yield Button(Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch", variant="primary", flat=True)
 
     def render_body(self) -> str:
         """The pane's plain-text body."""

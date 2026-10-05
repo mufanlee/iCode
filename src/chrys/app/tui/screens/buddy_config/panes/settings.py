@@ -59,7 +59,9 @@ class SettingsPane(Widget):
         )
         with Horizontal(classes="field"):
             yield Input(value=buddy.name if buddy is not None else "", id="buddy-config-name")
-            yield Button(self._render_message(_APPLY.bind()), id="buddy-config-name-apply")
+            yield Button(
+                self._render_message(_APPLY.bind()), id="buddy-config-name-apply", variant="primary", flat=True
+            )
         yield Static(
             self._render_message(_MUTED_LABEL.bind()),
             id="buddy-config-muted-label",
