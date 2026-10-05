@@ -50,6 +50,11 @@ class StubPorts:
     async def set_reply_model(self, model_id: str) -> None:
         self.calls.append(("model", model_id))
 
+    async def hatch(self) -> None:
+        self.calls.append(("hatch", None))
+        # A fresh draw so a test can see the dialog gain a buddy.
+        self._buddy = _record(9)
+
     async def rehatch(self) -> None:
         self.calls.append(("rehatch", None))
         # A different draw (and mute state) so a stale pane is detectable.

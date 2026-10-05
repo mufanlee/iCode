@@ -80,6 +80,9 @@ class BuddyConfigCoordinator:
     async def set_muted(self, muted: bool) -> None:
         await self._buddy_write(actions.set_muted, muted)
 
+    async def hatch(self) -> None:
+        await self._buddy_write(actions.hatch)
+
     async def rehatch(self) -> None:
         await self._buddy_write(actions.rehatch)
 

@@ -66,6 +66,7 @@ class BuddyConfigDialog(BaseDialog[None]):
         super().__init__()
         self._ports = ports
         self._locale_controller = locale_controller
+        self._buddy_tabs_added = False
 
     @property
     def active_tab(self) -> str:
@@ -84,12 +85,15 @@ class BuddyConfigDialog(BaseDialog[None]):
                 with TabPane(self._tab_label(_TAB_SETTINGS.bind()), id=SETTINGS_TAB_ID):
                     yield SettingsPane(self._ports, locale_controller=self._locale_controller)
         with Horizontal(id="buddy-config-footer"):
-            yield Button(
+            rehatch = Button(
                 Text(self._render_message(_REHATCH.bind())),
                 id="buddy-config-rehatch",
                 variant="error",
-                disabled=not has_buddy,
             )
+            # Hidden, not merely disabled, while no buddy exists (the design's
+            # empty state); revealed when a hatch lands.
+            rehatch.display = has_buddy
+            yield rehatch
             yield Button(Text(self._render_message(_CLOSE.bind())), id="buddy-config-close")
             yield Static(Text(self._render_message(_STATUS.bind())), id="buddy-config-status")
 
@@ -141,6 +145,40 @@ class BuddyConfigDialog(BaseDialog[None]):
         await self._ports.rehatch()
         if not self.is_mounted:
             return
+        for pane in self._panes():
+            pane.refresh_buddy()
+
+    @on(ProfilePane.Hatched)
+    async def _on_profile_hatched(self) -> None:
+        """A hatch landed: mount the buddy-only tabs and reveal the re-hatch button.
+
+        The Appearance and Settings panes are appended (``add_pane``) rather than
+        recomposed: the modal keeps its active Profile tab, its scroll and its
+        mounted portrait timer, so no MainScreen restyle is paid for.
+        """
+        if self._ports.buddy() is None:
+            return
+        if self._buddy_tabs_added:
+            return
+        self._buddy_tabs_added = True
+        tabs = self.query_one("#buddy-config-tabs", TabbedContent)
+        await tabs.add_pane(
+            TabPane(
+                self._tab_label(_TAB_APPEARANCE.bind()),
+                AppearancePane(self._ports, locale_controller=self._locale_controller),
+                id=APPEARANCE_TAB_ID,
+            )
+        )
+        await tabs.add_pane(
+            TabPane(
+                self._tab_label(_TAB_SETTINGS.bind()),
+                SettingsPane(self._ports, locale_controller=self._locale_controller),
+                id=SETTINGS_TAB_ID,
+            )
+        )
+        if not self.is_mounted:
+            return
+        self.query_one("#buddy-config-rehatch", Button).display = True
         for pane in self._panes():
             pane.refresh_buddy()
 

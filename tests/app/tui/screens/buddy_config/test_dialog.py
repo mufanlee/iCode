@@ -292,7 +292,109 @@ async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> N
         assert len(dialog.query(ProfilePane)) == 1
         assert list(dialog.query(AppearancePane)) == []
         assert list(dialog.query(SettingsPane)) == []
-        assert dialog.query_one("#buddy-config-rehatch", Button).disabled
+        assert not dialog.query_one("#buddy-config-rehatch", Button).display
+
+
+async def test_dialog_empty_state_shows_the_egg_and_hatches_inline(tmp_path) -> None:
+    from textual.widgets import Button, Static
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts(_buddy=None)
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        # The portrait area shows the egg while there is no buddy.
+        portrait = dialog.query_one("#buddy-config-portrait", Static)
+        assert "🥚" in str(portrait.content)
+
+        hatch = dialog.query_one("#buddy-config-hatch", Button)
+        assert hatch.display
+
+        await click_when_settled(pilot, "#buddy-config-hatch")
+        await wait_for(
+            lambda: ("hatch", None) in ports.calls,
+            pilot=pilot,
+            description="the inline hatch button hatches a buddy",
+        )
+
+
+async def test_dialog_reflects_a_freshly_hatched_buddy(tmp_path) -> None:
+    from textual.widgets import Button, Static, TabbedContent
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts(_buddy=None)
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        await click_when_settled(pilot, "#buddy-config-hatch")
+        await wait_for(
+            lambda: ports.buddy() is not None and dialog.query_one(TabbedContent).tab_count == 3,
+            pilot=pilot,
+            description="the hatch lands a buddy and adds the buddy-only tabs",
+        )
+
+        # Appending the buddy-only tabs must not steal the active tab.
+        assert dialog.active_tab == "buddy-config-tab-profile"
+        assert len(dialog.query(AppearancePane)) == 1
+        assert len(dialog.query(SettingsPane)) == 1
+        assert dialog.query_one("#buddy-config-rehatch", Button).display
+        # The empty hint gives way to the fresh buddy's facts.
+        assert ports.buddy().name in str(dialog.query_one("#buddy-config-facts", Static).content)
+        assert not dialog.query_one("#buddy-config-hatch", Button).display
+
+
+async def test_dialog_hatch_that_yields_no_buddy_keeps_the_empty_state(tmp_path) -> None:
+    from textual.widgets import Button, TabbedContent
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    class _BarrenPorts(StubPorts):
+        """A hatch that records the attempt but leaves no buddy behind."""
+
+        async def hatch(self) -> None:
+            self.calls.append(("hatch", None))
+
+    app = make_chrys_app(tmp_path)
+    ports = _BarrenPorts(_buddy=None)
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        hatch = dialog.query_one("#buddy-config-hatch", Button)
+        await click_when_settled(pilot, "#buddy-config-hatch")
+        await wait_for(
+            lambda: ("hatch", None) in ports.calls,
+            pilot=pilot,
+            description="the inline hatch button records the attempt",
+        )
+        await pilot.pause()
+
+        # A hatch that lands nothing must not mount the buddy-only tabs, reveal
+        # the re-hatch button, or disable the hatch button.
+        assert dialog.query_one(TabbedContent).tab_count == 1
+        assert not dialog.query_one("#buddy-config-rehatch", Button).display
+        assert hatch.display
+        assert not hatch.disabled
 
 
 async def test_dialog_switches_tabs_by_clicking_a_header(tmp_path) -> None:

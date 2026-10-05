@@ -1,5 +1,5 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
-
+#
 """The dialog's Profile tab: a live portrait beside the buddy's read-only facts."""
 
 from __future__ import annotations
@@ -7,9 +7,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Self
 
 from rich.text import Text
+from textual import on
 from textual.app import ComposeResult
+from textual.message import Message
 from textual.widget import Widget
-from textual.widgets import Static
+from textual.widgets import Button, Static
 
 from chrys.app.features.buddy.commands import buddy_card
 from chrys.app.features.buddy.portrait import PORTRAIT_WIDTH
@@ -30,6 +32,12 @@ _EMPTY_HINT = msg(
     fallback="Nothing has hatched yet.\n\n/buddy hatch finds out what is in the egg.",
     multiline=True,
 )
+_HATCH = msg("tui.buddy_config.action.hatch", fallback="Hatch")
+
+# The buddy command's no-buddy intro (tui.buddy.intro_no_buddy) draws this same
+# glyph; it is not exposed as a standalone constant, so the empty state renders
+# it directly.
+_EGG = "🥚"
 
 _PORTRAIT_TICK_SECONDS = 1 / 8
 
@@ -46,6 +54,9 @@ class ProfilePane(Widget):
     ProfilePane #buddy-config-facts { height: auto; }
     """
 
+    class Hatched(Message):
+        """Posted once the inline hatch button has landed a buddy."""
+
     def __init__(self, ports: BuddyConfigPorts, *, locale_controller: LocaleController | None = None) -> None:
         super().__init__()
         self._ports = ports
@@ -56,6 +67,7 @@ class ProfilePane(Widget):
     def compose(self) -> ComposeResult:
         yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
         yield Static("", id="buddy-config-facts")
+        yield Button(Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch")
 
     def render_body(self) -> str:
         """The pane's plain-text body."""
@@ -66,8 +78,12 @@ class ProfilePane(Widget):
 
     def on_mount(self) -> None:
         self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
+        self._sync_empty_state()
         self._portrait = self.query_one(_BuddyPortrait)
         self._timer = self.set_interval(_PORTRAIT_TICK_SECONDS, self._tick)
+        # Paint the first frame (or the egg) unconditionally: the animation tick
+        # below is visibility-gated and may not run before the first interval.
+        self._portrait.draw()
         # A pane mounted inside a hidden container never receives Show, so the
         # first tick parks the timer until an on_show resumes it.
         self._tick()
@@ -85,6 +101,9 @@ class ProfilePane(Widget):
         if not self.is_mounted:
             return
         self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
+        self._sync_empty_state()
+        if self._portrait is not None:
+            self._portrait.draw()
         self._tick()
 
     def refresh_localization(self) -> None:
@@ -92,6 +111,23 @@ class ProfilePane(Widget):
         if not self.is_mounted:
             return
         self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
+        self.query_one("#buddy-config-hatch", Button).label = Text(self._render_message(_HATCH.bind()))
+
+    @on(Button.Pressed, "#buddy-config-hatch")
+    async def _on_hatch_pressed(self) -> None:
+        button = self.query_one("#buddy-config-hatch", Button)
+        if button.disabled:
+            return  # a hatch is already in flight
+        button.disabled = True
+        try:
+            await self._ports.hatch()
+        finally:
+            button.disabled = False
+        self.post_message(self.Hatched())
+
+    def _sync_empty_state(self) -> None:
+        """Show the inline hatch button only while no buddy has hatched."""
+        self.query_one("#buddy-config-hatch", Button).display = self._ports.buddy() is None
 
     def _tick(self) -> None:
         if not is_widget_shown_on_active_screen(self):
@@ -130,16 +166,16 @@ class _BuddyPortrait(Static):
             regions = (self.outer_size.region - self.content_offset,)
         return super().refresh(*regions, repaint=repaint, layout=layout, recompose=recompose)
 
-    def tick(self) -> None:
+    def draw(self) -> None:
+        """Paint the current idle frame in place, or the egg when there is no buddy."""
         from chrys.app.features.buddy.animation import get_idle_frame
         from chrys.app.features.buddy.portrait import render_portrait
 
         buddy = self._ports.buddy()
         if buddy is None:
-            self.update(Text(""), layout=False)
+            self.update(Text(_EGG), layout=False)
             return
         frame, blink = get_idle_frame(buddy.species, self._tick_count)
-        self._tick_count += 1
         # content_size resolves region through the compositor and can arrange
         # the entire screen. outer_size is the latest cached layout size.
         _base_background, background = self.background_colors
@@ -156,3 +192,8 @@ class _BuddyPortrait(Static):
         # The portrait size is fixed by CSS; frames only repaint. layout=True
         # here would force a full-screen arrange per animation tick.
         self.update(Text("\n").join(lines), layout=False)
+
+    def tick(self) -> None:
+        """Advance the idle animation and paint the next frame."""
+        self.draw()
+        self._tick_count += 1
