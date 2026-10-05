@@ -37,6 +37,20 @@ def hatch(rng: Random | None = None) -> Buddy:
     return Buddy.of(record)
 
 
+def rehatch(rng: Random | None = None) -> Buddy | None:
+    """Replace the saved buddy with a fresh draw. None when none has hatched.
+
+    Unlike :func:`hatch`, this overwrites an existing record, so it can change
+    the species, rarity, shiny flag, traits and name. It is a wholesale
+    replacement, not an edit: the current record is read only to decide whether
+    there is one to replace.
+    """
+    if _STORE.load() is None:
+        return None
+    newborn = hatchling(rng if rng is not None else SystemRandom())
+    return _grown(_STORE.update(lambda current: newborn if current is not None else None))
+
+
 def rename(name: str) -> Buddy | None:
     """Give the buddy a new name. A name that cleans up to nothing changes nothing."""
     cleaned = clean_name(name)
