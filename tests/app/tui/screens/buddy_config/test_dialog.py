@@ -311,10 +311,18 @@ async def test_dialog_refreshes_the_panes_after_a_rehatch(tmp_path) -> None:
         name_input = dialog.query_one("#buddy-config-name", Input)
         muted = dialog.query_one("#buddy-config-muted", Switch)
         await wait_for(
-            lambda: new_name in str(facts.content) and name_input.value == new_name and muted.value is True,
+            lambda: (
+                new_name in str(facts.content)
+                and name_input.value == new_name
+                and muted.value is True
+                and muted.has_class("-on")
+            ),
             pilot=pilot,
             description="every pane repaints onto the new buddy",
         )
+        # The RENDERED toggle must match the new buddy, not merely its .value: a
+        # bare set_reactive would leave the slider class stale, rendering OFF.
+        assert muted.has_class("-on") is ports.buddy().muted
         # The resync is a read: it must not rename or flip mute back through the ports.
         assert not any(kind in {"muted", "rename"} for kind, _ in ports.calls)
 

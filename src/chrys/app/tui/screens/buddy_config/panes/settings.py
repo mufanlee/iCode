@@ -45,9 +45,6 @@ class SettingsPane(Widget):
         super().__init__()
         self._ports = ports
         self._locale_controller = locale_controller
-        # Set while a programmatic resync writes the controls: the commit
-        # handlers below must never turn that into a port write.
-        self._suppress_writes = False
 
     def compose(self) -> ComposeResult:
         buddy = self._ports.buddy()
@@ -89,24 +86,26 @@ class SettingsPane(Widget):
     def refresh_buddy(self) -> None:
         """Resync name and mute from the ports without committing a write back.
 
-        A plain ``Switch.value`` assignment schedules a ``Changed`` message that
-        the guard below cannot suppress, because Textual dispatches it after this
-        method returns; ``set_reactive`` posts no message at all.
+        A plain ``Switch.value`` assignment runs its real watcher (so the slider
+        and ``-on`` class repaint) and posts ``Changed``; the guard in
+        ``_toggle_muted`` makes that programmatic change a no-op because the
+        switch now equals the port's value.
         """
-        if not self.is_mounted:
-            return
         buddy = self._ports.buddy()
-        if buddy is None:
+        if buddy is None or not self.is_mounted:
             return
-        self._suppress_writes = True
-        try:
-            self.query_one("#buddy-config-name", Input).value = buddy.name
-            self.query_one("#buddy-config-muted", Switch).set_reactive(Switch.value, buddy.muted)
-        finally:
-            self._suppress_writes = False
+        self.query_one("#buddy-config-name", Input).value = buddy.name
+        self.query_one("#buddy-config-muted", Switch).value = buddy.muted
+        # the model Select is intentionally not resynced (see below)
 
     def refresh_localization(self) -> None:
-        """Re-render the field labels and Apply button; the Select options stay put."""
+        """Re-render the field labels and Apply button.
+
+        The model Select is deliberately not resynced: resetting its options
+        would re-post ``Changed`` and write the value back through the ports.
+        Its labels therefore keep whatever locale was current when it opened --
+        a chosen residual, not an API limitation.
+        """
         if not self.is_mounted:
             return
         self.query_one("#buddy-config-name-label", Static).update(Text(self._render_message(_NAME_LABEL.bind())))
@@ -123,14 +122,10 @@ class SettingsPane(Widget):
 
     @on(Button.Pressed, "#buddy-config-name-apply")
     async def _apply_name(self) -> None:
-        if self._suppress_writes:
-            return
         await self.commit_name(self.query_one("#buddy-config-name", Input).value)
 
     @on(Input.Submitted, "#buddy-config-name")
     async def _submit_name(self) -> None:
-        if self._suppress_writes:
-            return
         await self.commit_name(self.query_one("#buddy-config-name", Input).value)
 
     @on(Select.Changed, "#buddy-config-model")
@@ -142,8 +137,9 @@ class SettingsPane(Widget):
 
     @on(Switch.Changed, "#buddy-config-muted")
     async def _toggle_muted(self, event: Switch.Changed) -> None:
-        if self._suppress_writes:
-            return
+        buddy = self._ports.buddy()
+        if buddy is not None and event.value == buddy.muted:
+            return  # programmatic resync, not a user edit
         await self._ports.set_muted(event.value)
 
     def _render_message(self, reference: MessageRef) -> str:
