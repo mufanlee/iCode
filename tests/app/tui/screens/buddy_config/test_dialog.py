@@ -253,3 +253,22 @@ def test_appearance_lists_six_frames() -> None:
     assert FRAME_COUNT == 6
     pane = AppearancePane(StubPorts(), locale_controller=None)
     assert len(pane.frame_rows()) == 6
+
+
+async def test_dialog_opens_on_the_profile_tab(tmp_path) -> None:
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+    from tests.support.waiting import wait_for
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: app.screen is dialog and dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        assert dialog.active_tab == "buddy-config-tab-profile"
+        await pilot.press("escape")
+        await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")

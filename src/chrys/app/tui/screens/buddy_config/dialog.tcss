@@ -1,0 +1,3 @@
+BuddyConfigDialog { align: center middle; }
+#buddy-config-tabs { width: 84; height: 26; }
+#buddy-config-footer { height: auto; }
