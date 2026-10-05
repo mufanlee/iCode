@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
@@ -44,16 +45,31 @@ class SettingsPane(Widget):
         super().__init__()
         self._ports = ports
         self._locale_controller = locale_controller
+        # Set while a programmatic resync writes the controls: the commit
+        # handlers below must never turn that into a port write.
+        self._suppress_writes = False
 
     def compose(self) -> ComposeResult:
         buddy = self._ports.buddy()
-        yield Static(self._render_message(_NAME_LABEL.bind()), classes="field")
+        yield Static(
+            self._render_message(_NAME_LABEL.bind()),
+            id="buddy-config-name-label",
+            classes="field",
+        )
         with Horizontal(classes="field"):
             yield Input(value=buddy.name if buddy is not None else "", id="buddy-config-name")
             yield Button(self._render_message(_APPLY.bind()), id="buddy-config-name-apply")
-        yield Static(self._render_message(_MUTED_LABEL.bind()), classes="field")
+        yield Static(
+            self._render_message(_MUTED_LABEL.bind()),
+            id="buddy-config-muted-label",
+            classes="field",
+        )
         yield Switch(value=buddy.muted if buddy is not None else False, id="buddy-config-muted")
-        yield Static(self._render_message(_MODEL_LABEL.bind()), classes="field")
+        yield Static(
+            self._render_message(_MODEL_LABEL.bind()),
+            id="buddy-config-model-label",
+            classes="field",
+        )
         choices = self._model_choices()
         value = self._ports.reply_model()
         # Select(allow_blank=False) rejects an initial value that is not among its
@@ -70,6 +86,34 @@ class SettingsPane(Widget):
             for value, label in self._ports.model_options()
         ]
 
+    def refresh_buddy(self) -> None:
+        """Resync name and mute from the ports without committing a write back.
+
+        A plain ``Switch.value`` assignment schedules a ``Changed`` message that
+        the guard below cannot suppress, because Textual dispatches it after this
+        method returns; ``set_reactive`` posts no message at all.
+        """
+        if not self.is_mounted:
+            return
+        buddy = self._ports.buddy()
+        if buddy is None:
+            return
+        self._suppress_writes = True
+        try:
+            self.query_one("#buddy-config-name", Input).value = buddy.name
+            self.query_one("#buddy-config-muted", Switch).set_reactive(Switch.value, buddy.muted)
+        finally:
+            self._suppress_writes = False
+
+    def refresh_localization(self) -> None:
+        """Re-render the field labels and Apply button; the Select options stay put."""
+        if not self.is_mounted:
+            return
+        self.query_one("#buddy-config-name-label", Static).update(Text(self._render_message(_NAME_LABEL.bind())))
+        self.query_one("#buddy-config-muted-label", Static).update(Text(self._render_message(_MUTED_LABEL.bind())))
+        self.query_one("#buddy-config-model-label", Static).update(Text(self._render_message(_MODEL_LABEL.bind())))
+        self.query_one("#buddy-config-name-apply", Button).label = Text(self._render_message(_APPLY.bind()))
+
     async def commit_name(self, value: str) -> None:
         """Apply a typed name. A name that cleans to nothing is refused."""
         if not clean_name(value):
@@ -79,10 +123,14 @@ class SettingsPane(Widget):
 
     @on(Button.Pressed, "#buddy-config-name-apply")
     async def _apply_name(self) -> None:
+        if self._suppress_writes:
+            return
         await self.commit_name(self.query_one("#buddy-config-name", Input).value)
 
     @on(Input.Submitted, "#buddy-config-name")
     async def _submit_name(self) -> None:
+        if self._suppress_writes:
+            return
         await self.commit_name(self.query_one("#buddy-config-name", Input).value)
 
     @on(Select.Changed, "#buddy-config-model")
@@ -94,6 +142,8 @@ class SettingsPane(Widget):
 
     @on(Switch.Changed, "#buddy-config-muted")
     async def _toggle_muted(self, event: Switch.Changed) -> None:
+        if self._suppress_writes:
+            return
         await self._ports.set_muted(event.value)
 
     def _render_message(self, reference: MessageRef) -> str:

@@ -7,11 +7,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 
 from rich.text import Text
-from textual import on, work
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.content import Content
-from textual.widgets import Button, TabbedContent, TabPane
+from textual.widgets import Button, Static, TabbedContent, TabPane
 
 from chrys.app.tui.binding_display import CLOSE_BINDING, localized_binding
 from chrys.app.tui.i18n import render_str
@@ -19,7 +19,7 @@ from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
 from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
 from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 from chrys.app.tui.screens.dialogs.base import BaseDialog
-from chrys.foundation.i18n import MessageRef, msg
+from chrys.foundation.i18n import MessageDef, MessageRef, msg
 from chrys.foundation.i18n.formatting import format_message
 
 if TYPE_CHECKING:
@@ -44,6 +44,15 @@ _REHATCH_CONFIRM = msg(
         "Its species, rarity, traits and progress cannot be recovered."
     ),
 )
+
+# The ids that exist depend on whether a buddy was present at compose time.
+_TAB_SPECS: tuple[tuple[str, MessageDef], ...] = (
+    (PROFILE_TAB_ID, _TAB_PROFILE),
+    (APPEARANCE_TAB_ID, _TAB_APPEARANCE),
+    (SETTINGS_TAB_ID, _TAB_SETTINGS),
+)
+
+_PANE_TYPES = (ProfilePane, SettingsPane, AppearancePane)
 
 
 class BuddyConfigDialog(BaseDialog[None]):
@@ -82,7 +91,28 @@ class BuddyConfigDialog(BaseDialog[None]):
                 disabled=not has_buddy,
             )
             yield Button(Text(self._render_message(_CLOSE.bind())), id="buddy-config-close")
-            yield Button(Text(self._render_message(_STATUS.bind())), id="buddy-config-status", disabled=True)
+            yield Static(Text(self._render_message(_STATUS.bind())), id="buddy-config-status")
+
+    def on_mount(self) -> None:
+        if self._locale_controller is not None:
+            self._locale_controller.register_surface(self)
+
+    def on_unmount(self) -> None:
+        if self._locale_controller is not None:
+            self._locale_controller.unregister_surface(self)
+
+    def refresh_localization(self) -> None:
+        """Replace this dialog's chrome text in place, then let each pane retitle itself."""
+        tabs = self.query_one("#buddy-config-tabs", TabbedContent)
+        tabs.border_title = Text(self._render_message(_TITLE.bind()))
+        for tab_id, definition in _TAB_SPECS:
+            if self.query(f"#{tab_id}"):
+                tabs.get_tab(tab_id).label = self._tab_label(definition.bind())
+        self.query_one("#buddy-config-rehatch", Button).label = Text(self._render_message(_REHATCH.bind()))
+        self.query_one("#buddy-config-close", Button).label = Text(self._render_message(_CLOSE.bind()))
+        self.query_one("#buddy-config-status", Static).update(Text(self._render_message(_STATUS.bind())))
+        for pane in self._panes():
+            pane.refresh_localization()
 
     def action_close(self) -> None:
         self.dismiss(None)
@@ -104,13 +134,21 @@ class BuddyConfigDialog(BaseDialog[None]):
         )
         self.app.push_screen(dialog, self._rehatch_if_confirmed)
 
-    def _rehatch_if_confirmed(self, confirmed: bool | None) -> None:
-        if confirmed:
-            self._run_rehatch()
-
-    @work(thread=False)
-    async def _run_rehatch(self) -> None:
+    async def _rehatch_if_confirmed(self, confirmed: bool | None) -> None:
+        """Re-hatch, then repaint every mounted pane: they still show the old buddy."""
+        if not confirmed:
+            return
         await self._ports.rehatch()
+        if not self.is_mounted:
+            return
+        for pane in self._panes():
+            pane.refresh_buddy()
+
+    def _panes(self) -> list[ProfilePane | SettingsPane | AppearancePane]:
+        panes: list[ProfilePane | SettingsPane | AppearancePane] = []
+        for pane_type in _PANE_TYPES:
+            panes.extend(self.query(pane_type))
+        return panes
 
     def _tab_label(self, reference: MessageRef) -> Content:
         """A tab caption as literal content; a translated label is never markup."""

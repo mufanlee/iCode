@@ -80,6 +80,19 @@ class ProfilePane(Widget):
         if self._timer is not None:
             self._timer.pause()
 
+    def refresh_buddy(self) -> None:
+        """Repaint the facts and the portrait after the buddy changed underneath."""
+        if not self.is_mounted:
+            return
+        self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
+        self._tick()
+
+    def refresh_localization(self) -> None:
+        """Re-render the facts; its labels resolve through the live localizer."""
+        if not self.is_mounted:
+            return
+        self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
+
     def _tick(self) -> None:
         if not is_widget_shown_on_active_screen(self):
             if self._timer is not None:

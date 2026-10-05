@@ -40,6 +40,7 @@ _PICKER_TITLE = msg("tui.buddy_config.appearance.picker.title", fallback="Select
 _IMPORT_PREFIX = "frame-import-"
 _REMOVE_PREFIX = "frame-remove-"
 _OPEN_FOLDER_ID = "buddy-config-open-folder"
+_HINT_ID = "buddy-config-appearance-hint"
 
 
 @dataclass(frozen=True)
@@ -77,7 +78,29 @@ class AppearancePane(Widget):
                 yield Button(Text(self._render_message(_IMPORT.bind())), id=f"{_IMPORT_PREFIX}{row.frame}")
                 yield Button(Text(self._render_message(_REMOVE.bind())), id=f"{_REMOVE_PREFIX}{row.frame}")
         yield Button(Text(self._render_message(_OPEN.bind())), id=_OPEN_FOLDER_ID)
-        yield Static(Text(self._render_message(_HINT.bind())), classes="frame-row")
+        yield Static(
+            Text(self._render_message(_HINT.bind())),
+            id=_HINT_ID,
+            classes="frame-row",
+        )
+
+    def refresh_buddy(self) -> None:
+        """Re-read every row's artwork state after the buddy changed underneath."""
+        if not self.is_mounted:
+            return
+        for frame in range(FRAME_COUNT):
+            self._refresh_frame_state(frame)
+
+    def refresh_localization(self) -> None:
+        """Re-render the per-frame state labels, buttons and the hint."""
+        if not self.is_mounted:
+            return
+        for frame in range(FRAME_COUNT):
+            self._refresh_frame_state(frame)
+            self.query_one(f"#{_IMPORT_PREFIX}{frame}", Button).label = Text(self._render_message(_IMPORT.bind()))
+            self.query_one(f"#{_REMOVE_PREFIX}{frame}", Button).label = Text(self._render_message(_REMOVE.bind()))
+        self.query_one(f"#{_OPEN_FOLDER_ID}", Button).label = Text(self._render_message(_OPEN.bind()))
+        self.query_one(f"#{_HINT_ID}", Static).update(Text(self._render_message(_HINT.bind())))
 
     async def import_into(self, frame: int, source: Path) -> None:
         """Replace one frame's artwork with the art at *source*."""

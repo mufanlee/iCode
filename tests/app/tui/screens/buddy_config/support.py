@@ -4,19 +4,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from chrys.app.features.buddy.model import Buddy, Species
 from chrys.app.tui.screens.buddy_config.ports import FrameState
 
 
-def _record() -> Buddy:
+def _record(seed: int = 7, *, muted: bool = False) -> Buddy:
     from random import Random
 
     from chrys.app.features.buddy.hatchery import hatchling
 
-    return Buddy.of(hatchling(Random(7)))
+    return Buddy.of(replace(hatchling(Random(seed)), muted=muted))
 
 
 @dataclass
@@ -52,6 +52,8 @@ class StubPorts:
 
     async def rehatch(self) -> None:
         self.calls.append(("rehatch", None))
+        # A different draw (and mute state) so a stale pane is detectable.
+        self._buddy = _record(8, muted=True)
 
     async def import_frame(self, frame: int, source: Path) -> None:
         self.calls.append(("import", (frame, source)))

@@ -1,3 +1,11 @@
 BuddyConfigDialog { align: center middle; }
-#buddy-config-tabs { width: 84; height: 26; }
+/* 84 wide and 28 tall: the Appearance tab needs ~22 rows, plus the tab bar and
+   the two-row border the title now needs. */
+#buddy-config-tabs {
+    width: 84;
+    height: 28;
+    border: round $tui-border-primary $border-opacity;
+    border-title-color: $primary;
+    border-title-style: bold;
+}
 #buddy-config-footer { height: auto; }

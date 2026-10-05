@@ -272,3 +272,133 @@ async def test_dialog_opens_on_the_profile_tab(tmp_path) -> None:
         assert dialog.active_tab == "buddy-config-tab-profile"
         await pilot.press("escape")
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
+
+
+async def test_dialog_refreshes_the_panes_after_a_rehatch(tmp_path) -> None:
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.dialogs.confirm import ConfirmDialog
+    from tests.app.tui.screens.buddy_config.support import _record
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+    new_name = _record(8, muted=True).name
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        facts = dialog.query_one("#buddy-config-facts", Static)
+        assert ports.buddy().name in str(facts.content)
+
+        await click_when_settled(pilot, "#buddy-config-rehatch")
+        await wait_for(
+            lambda: isinstance(app.screen, ConfirmDialog),
+            pilot=pilot,
+            description="the re-hatch confirmation opens",
+        )
+        await click_when_settled(pilot, "#confirm-yes")
+        await wait_for(
+            lambda: ports.buddy() is not None and ports.buddy().name == new_name,
+            pilot=pilot,
+            description="the re-hatch swaps the buddy",
+        )
+
+        name_input = dialog.query_one("#buddy-config-name", Input)
+        muted = dialog.query_one("#buddy-config-muted", Switch)
+        await wait_for(
+            lambda: new_name in str(facts.content) and name_input.value == new_name and muted.value is True,
+            pilot=pilot,
+            description="every pane repaints onto the new buddy",
+        )
+        # The resync is a read: it must not rename or flip mute back through the ports.
+        assert not any(kind in {"muted", "rename"} for kind, _ in ports.calls)
+
+
+class _MarkerLocalizer:
+    """A ``Localizer`` double whose every message renders as one mutable marker."""
+
+    def __init__(self, marker: str) -> None:
+        self.marker = marker
+
+    def render(self, _reference: object) -> str:
+        return self.marker
+
+
+class _StubLocaleController:
+    """Records surface registration and exposes the marker localizer the test flips."""
+
+    def __init__(self, marker: str = "EN-MARK") -> None:
+        self.localizer = _MarkerLocalizer(marker)
+        self.registered: list[object] = []
+        self.unregistered: list[object] = []
+
+    def register_surface(self, surface: object) -> None:
+        self.registered.append(surface)
+
+    def unregister_surface(self, surface: object) -> None:
+        self.unregistered.append(surface)
+
+
+async def test_dialog_registers_and_unregisters_its_localization_surface(tmp_path) -> None:
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    controller = app.locale_controller
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=controller)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+        assert dialog in controller._surfaces
+
+        await pilot.press("escape")
+        await wait_for(
+            lambda: dialog not in controller._surfaces,
+            pilot=pilot,
+            description="the dialog unregisters its surface on close",
+        )
+
+    assert dialog not in controller._surfaces
+
+
+async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
+    from textual.widgets import Button, Static
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    controller = _StubLocaleController()
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=controller)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        close = dialog.query_one("#buddy-config-close", Button)
+        assert dialog in controller.registered
+        assert str(close.label) == "EN-MARK"
+
+        controller.localizer.marker = "ZH-MARK"
+        dialog.refresh_localization()
+        await pilot.pause()
+
+        assert str(close.label) == "ZH-MARK"
+        assert str(dialog.query_one("#buddy-config-rehatch", Button).label) == "ZH-MARK"
+        assert str(dialog.query_one("#buddy-config-status", Static).content) == "ZH-MARK"
+        assert str(dialog.query_one("#buddy-config-name-label", Static).content) == "ZH-MARK"
+
+        await pilot.press("escape")
+        await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
+
+    assert dialog in controller.unregistered
