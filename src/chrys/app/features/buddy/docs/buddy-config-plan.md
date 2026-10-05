@@ -1567,3 +1567,8 @@ these ways:
 - The dialog is 32 rows tall and the Appearance pane scrolls its preview plus six rows.
 - `_render_message(reference)` (localizer-or-fallback, rendered via `render_str`) replaced
   the plan's `_t(controller, ref)` calls.
+- The re-hatch footer button is hidden (`display`) rather than disabled while no buddy
+  exists, matching the design; an inline hatch reveals it and appends the Appearance and
+  Settings tabs (`TabbedContent.add_pane`), without recomposing the dialog.
+- The Profile pane's empty state also renders the egg and an inline Hatch button that
+  calls `ports.hatch()`.
