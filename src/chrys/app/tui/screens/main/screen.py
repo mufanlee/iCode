@@ -48,7 +48,7 @@ from chrys.app.tui.screens.main.model_indicator import (
     is_model_selection_locked,
 )
 from chrys.app.tui.screens.main.navigation import MainNavigationController
-from chrys.app.tui.screens.main.ports import StatusMessage
+from chrys.app.tui.screens.main.ports import NotificationSeverity, StatusMessage
 from chrys.app.tui.screens.main.rollback_controller import RollbackController
 from chrys.app.tui.screens.main.runtime_info import RegistryRuntimeInfoProvider
 from chrys.app.tui.screens.main.session_handlers import SessionCallbacks, SessionHandler
@@ -110,6 +110,7 @@ from chrys.app.tui.widgets.chrome.input_bar import InputBar
 from chrys.app.tui.widgets.chrome.status_bar import StatusBar
 from chrys.app.tui.widgets.chrome.suggestion_list import SuggestionList
 from chrys.app.tui.widgets.editor import MESSAGE_EDITOR_MAX_CHARACTERS, EditorBufferSnapshot, EditorMode
+from chrys.app.tui.widgets.sidebar.buddy import BuddyPanel
 from chrys.app.tui.widgets.sidebar.context import ContextUsageState
 from chrys.app.tui.widgets.sidebar.panel import SidebarPanel
 from chrys.app.tui.widgets.sidebar.tasks import TodoListState
@@ -141,6 +142,8 @@ from chrys.service.profiles.models.schema import UNCONFIGURED_MODEL_ID, is_model
 from chrys.service.session.sub_agent_transcript import load_persisted_sub_agent_transcript
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from textual.app import ComposeResult
     from textual.theme import Theme
 
@@ -148,6 +151,7 @@ if TYPE_CHECKING:
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.notifications import NotificationService
     from chrys.app.tui.notifications.settings import NotificationSettings
+    from chrys.app.tui.screens.main.buddy_config_coordinator import BuddyConfigCoordinator
     from chrys.app.tui.screens.sessions import WorkflowSessionPick
     from chrys.app.tui.screens.themes.picker import ThemesScreen
     from chrys.app.tui.themes.store import ThemeFileRevision, UserThemeStore
@@ -193,6 +197,7 @@ _MODEL_UNCONFIGURED_MESSAGE = msg(
     fallback="Your message was not sent. Configure and select a model to get started.",
 )
 _MODEL_UNCONFIGURED_SETUP = msg("tui.model_guard.button.setup", fallback="Set up model")
+_BUDDY_FOLLOW_MODEL = msg("tui.buddy_config.reply_model.follow", fallback="Follow the active model")
 
 _TERMINAL_TITLE_ACTIVITY_INTERVAL_SECONDS = 0.65
 _TERMINAL_TITLE_RUNNING_FRAMES = ("◇", "◈", "◆", "◈")
@@ -392,6 +397,7 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
                 debug=self._debug,
                 notification_service=self._notification_service,
                 settings_coordinator=self._settings_coordinator,
+                buddy_config_coordinator=self._buddy_config_coordinator,
             ),
             profile_descriptions=self._runtime_info,
             locale_controller=self._locale_controller,
@@ -630,6 +636,56 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
             coordinator = self._new_settings_coordinator()
             self.__dict__["_settings_coordinator_instance"] = coordinator
         return coordinator
+
+    def _buddy_config_coordinator(self) -> BuddyConfigCoordinator:
+        """The buddy-config dialog's adapter, built on first use.
+
+        Lazy like the settings coordinator: most sessions never open the
+        dialog, and the adapter owns nothing until it does.
+        """
+        from chrys.app.tui.screens.main.buddy_config_coordinator import (
+            BuddyConfigCallbacks,
+            BuddyConfigCoordinator,
+        )
+
+        coordinator = self.__dict__.get("_buddy_config_coordinator_instance")
+        if not isinstance(coordinator, BuddyConfigCoordinator):
+            coordinator = BuddyConfigCoordinator(
+                BuddyConfigCallbacks(
+                    save_settings=self._settings_persistence().persist_patch,
+                    notify=self._notify_buddy_config,
+                    settings=lambda: cast("ChrysApp", self.app).settings_handle.settings,
+                    model_options=self._buddy_model_options,
+                    open_path=self._open_path_in_os,
+                )
+            )
+            self.__dict__["_buddy_config_coordinator_instance"] = coordinator
+        return coordinator
+
+    def _notify_buddy_config(
+        self, message: StatusMessage, *, severity: NotificationSeverity = "information", timeout: float = 10
+    ) -> None:
+        """Toast a coordinator message; a ``MessageRef`` is rendered before notifying."""
+        text = message if isinstance(message, str) else render_str(self._language_localizer(), message)
+        self.notify(text, severity=severity, timeout=timeout, markup=False)
+
+    def _buddy_model_options(self) -> list[tuple[str, str]]:
+        """The reply-model picker's options: follow the active model, then every model id."""
+        follow = render_str(self._language_localizer(), _BUDDY_FOLLOW_MODEL.bind())
+        options: list[tuple[str, str]] = [("", follow)]
+        registry = self._services.model_registry
+        if registry is not None:
+            model_ids = dict.fromkeys(profile.model_id for profile in registry.list_profiles() if profile.model_id)
+            options.extend((model_id, model_id) for model_id in model_ids)
+        return options
+
+    def _open_path_in_os(self, path: Path) -> None:
+        """Reveal *path* in the desktop file manager, when one is reachable."""
+        from chrys.app.tui.support.file_manager import can_open_in_file_manager, open_in_file_manager
+
+        if not can_open_in_file_manager():
+            return
+        open_in_file_manager(path)
 
     def _switch_locale_for_panel(self, requested_locale: str) -> None:
         """The panel's locale row goes through the same action as the picker and
@@ -2129,6 +2185,11 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         if not self._workflow.workflow_mode:
             self._config_actions.on_model_tag_clicked(event.mode)
 
+    @on(BuddyPanel.ConfigRequested)
+    def _on_buddy_config_requested(self, _event: BuddyPanel.ConfigRequested) -> None:
+        """Open the Buddy configuration dialog from the sidebar's ⚙ button."""
+        self.open_buddy_config()
+
     @work(thread=False)
     async def _switch_agent_profile(self, profile_name: str) -> None:
         """Publish an AgentProfileSwitch event to the backend."""
@@ -2201,6 +2262,10 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
     def _open_settings(self, initial_tab: str = GENERAL_TAB_ID) -> None:
         """Open the Settings dialog at *initial_tab*."""
         self._config_actions.open_settings(initial_tab)
+
+    def open_buddy_config(self) -> None:
+        """Open the Buddy configuration dialog."""
+        self._config_actions.open_buddy_config()
 
     def _schedule_notification_settings_save(self, settings: NotificationSettings) -> None:
         """Record the live choice, then persist it after a short debounce."""

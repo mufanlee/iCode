@@ -27,6 +27,7 @@ class _BuddyView:
     def __init__(self) -> None:
         self.notifications: list[tuple[str, str, float]] = []
         self.refreshes: list[bool] = []
+        self.config_requests = 0
 
     def notify_buddy(
         self,
@@ -42,6 +43,9 @@ class _BuddyView:
 
     def call_after_refresh(self, callback: Callable[[], None]) -> None:
         callback()
+
+    def open_buddy_config(self) -> None:
+        self.config_requests += 1
 
 
 pytestmark = pytest.mark.usefixtures("buddy_reply_gate_left_open")
@@ -62,7 +66,15 @@ def test_the_offered_subcommands_depend_on_whether_a_buddy_has_hatched() -> None
 
     assert [name for name, _description in controller.subcommands()] == ["hatch"]
     actions.hatch(Random(1))
-    assert [name for name, _description in controller.subcommands()] == ["info", "pet", "mute", "name"]
+    assert [name for name, _description in controller.subcommands()] == ["info", "pet", "mute", "name", "config"]
+
+
+def test_config_is_offered_only_once_a_buddy_has_hatched() -> None:
+    controller = BuddyCommandController(_BuddyView())
+
+    assert "config" not in [name for name, _description in controller.subcommands()]
+    actions.hatch(Random(1))
+    assert "config" in [name for name, _description in controller.subcommands()]
 
 
 @pytest.mark.asyncio
