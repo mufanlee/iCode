@@ -1572,3 +1572,11 @@ these ways:
   Settings tabs (`TabbedContent.add_pane`), without recomposing the dialog.
 - The Profile pane's empty state also renders the egg and an inline Hatch button that
   calls `ports.hatch()`.
+- The dialog is framed and centered like the other dialogs: a single `#buddy-config-container`
+  (`VerticalGroup`) hosts the tabs and a shared `DialogButtonRow`/`DialogButtonSpec`, and the
+  autosave status is the container's border subtitle rather than a footer widget.
+- In-content buttons use `flat=True` with a variant (primary/error/warning), so the dialog
+  chrome does not read as a stack of raised buttons.
+- The buddy entry point is the footer's F7 **Buddy** binding (`localized_binding("f7",
+  "buddy_config", …)` → `action_buddy_config`), not the in-panel **Configure** button the plan
+  described; that sidebar button and its `ConfigRequested` message were removed.

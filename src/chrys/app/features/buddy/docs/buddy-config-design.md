@@ -2,8 +2,9 @@
 
 Status: design approved 2026-10-04; implemented on `feat/buddy-config`.
 
-A single modal, opened by `/buddy config` or from the sidebar Buddy tab, that
-lets the user see their buddy and make the few changes the design permits:
+A single modal, opened by `/buddy config` or from the footer's **Buddy** binding
+(F7), that lets the user see their buddy and make the few changes the design
+permits:
 rename it, mute it, pick the model that writes its replies, and install or
 remove custom pixel artwork for their species. It never changes what the buddy
 *is* — species, rarity, shiny, traits and progress stay whatever the hatch
@@ -34,7 +35,7 @@ change those, and it is behind a confirmation.
 | Decision | Choice |
 | --- | --- |
 | Scope | One unified panel |
-| Carrier | Dedicated modal dialog, `/buddy config` + sidebar entry |
+| Carrier | Dedicated modal dialog, `/buddy config` + footer F7 binding |
 | Editable | Mild: name, mute, reply model, custom PNG; identity read-only |
 | Behavior toggles | Reply model + mute only |
 | Appearance | Current species only, with import/remove/open-folder |
@@ -49,7 +50,7 @@ A new dialog package, mirroring `screens/settings/`:
 ```
 app/tui/screens/buddy_config/
 ├── __init__.py          # exports BuddyConfigDialog
-├── dialog.py            # BuddyConfigDialog(BaseDialog[None]): tabs + action footer
+├── dialog.py            # BuddyConfigDialog(BaseDialog[None]): tabs + docked button row
 ├── dialog.tcss          # layout and styling
 ├── ports.py             # BuddyConfigPorts protocol + FrameState
 └── panes/
@@ -75,10 +76,13 @@ failures into toasts.
   that pushes the dialog instead of going through `handle_buddy_command`. Always
   available; the dialog shows its empty (egg) state when no buddy exists. The
   existing subcommand hint list still leads with `hatch` when there is no buddy.
-- Sidebar: a labelled **Configure** button at the bottom of `BuddyPanel`. It
-  posts a `BuddyPanel.ConfigRequested` message; `MainScreen` handles it and
-  calls the same open path. Its `Pressed` handler stops the event, and a click
-  guard keeps a configure click from also petting the buddy.
+- Footer: a **Buddy** binding (F7) on the footer key row, alongside the
+  Sessions/Agents/Models/Logs bindings. `MainScreen` declares it as a
+  `localized_binding("f7", "buddy_config", _BUDDY_CONFIG_BINDING)`, whose
+  `action_buddy_config` calls the same open path as `/buddy config`. Always
+  available. The earlier in-panel **Configure** button at the bottom of
+  `BuddyPanel` — with its `ConfigRequested` message and pet-guard click
+  handler — was removed when the entry point moved to the footer.
 
 ## Interfaces
 
@@ -146,8 +150,12 @@ the dialog is open is not pushed into it; reopening shows it. This is accepted
 
 ## UI / UX
 
-`BuddyConfigDialog` is a `BaseDialog[None]` (modal, escape closes) with a
-`TabbedContent` and a footer:
+`BuddyConfigDialog` is a `BaseDialog[None]` (modal, escape closes) framed and
+centered like the other dialogs: one bordered `#buddy-config-container`
+(`VerticalGroup`) hosts a `TabbedContent` and a docked `DialogButtonRow`. The
+title is the container's border title and the autosave status ("Changes are
+saved as you make them") is its border subtitle — not a footer widget. In-content
+buttons use `flat=True` with a variant (primary/error/warning).
 
 - **Profile** — live animated portrait on the left; read-only fields on the
   right: name, species, rarity (with evolution stage), shiny, the four traits
@@ -156,7 +164,7 @@ the dialog is open is not pushed into it; reopening shows it. This is accepted
 - **Appearance** — a portrait preview (default frame 0, switchable by clicking a
   frame row) on top; six rows (frame 0–5) each showing state (built-in/custom)
   and `[Import]` /
-  `[Remove]`; a footer line `[Open folder]` and a hint naming
+  `[Remove]`; an `[Open folder]` line and a hint naming
   `<species>_<frame>.png`. Import uses the existing
   `screens/dialogs/file_picker.py::FilePicker` in `FilePickerMode.FILE` filtered
   to `.png`.
@@ -165,8 +173,10 @@ the dialog is open is not pushed into it; reopening shows it. This is accepted
   of the chrome, the `Select`'s option labels deliberately do not retranslate on
   a live locale switch: resetting its options would re-post `Changed` and write
   the value back through the ports. A documented residual, not an API limit.
-- **Footer** — `[Re-hatch]` (danger styling, opens `screens/dialogs/confirm.py`
-  first) + `[Close]` + a status line ("Changes are saved as you make them").
+- **Button row** — a shared `DialogButtonRow` docked inside the container:
+  `[Re-hatch]` (error variant, opens `screens/dialogs/confirm.py` first) +
+  `[Close]` (warning variant); the autosave status is the container's border
+  subtitle.
 - **Empty state** — with no buddy, the Profile tab shows the egg and a hint
   with an inline hatch button (calling `actions.hatch()`); the Appearance tab is
   hidden and not selectable, and the re-hatch button is hidden.
