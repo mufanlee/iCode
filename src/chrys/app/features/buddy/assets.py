@@ -42,12 +42,17 @@ def install_frame(species: Species, frame: int, source: Path) -> None:
         OSError: *source* cannot be read, or is not a decodable image, or the
             destination cannot be written. Nothing is written on failure.
     """
+    from io import BytesIO
+
     from PIL import Image
 
     destination = frame_path(species, frame)
-    with Image.open(source) as opened:  # raises OSError/UnidentifiedImageError on non-images
-        opened.verify()
     payload = Path(source).read_bytes()
+    try:
+        with Image.open(BytesIO(payload)) as opened:
+            opened.verify()
+    except (SyntaxError, ValueError, Image.DecompressionBombError) as exc:
+        raise OSError(f"not a decodable image: {source}") from exc
     atomic_write_owner_only_bytes(destination, payload)
 
 
