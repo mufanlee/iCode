@@ -4294,6 +4294,12 @@ msgstr ""
 msgid "tui.buddy_config.action.close"
 msgstr ""
 
+#. English: Hatch
+#. chrys-meta={"fingerprint":"70e6ae443af11e40a421e70bfdfb15615133eeb995a6001a31dd224ebdf7af87","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/profile.py
+msgid "tui.buddy_config.action.hatch"
+msgstr ""
+
 #. English: Import
 #. chrys-meta={"fingerprint":"1e974c8a0fc93af4325ba12ec3143785d96e73d9b34f087a10937a3eed3f5d48","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
@@ -4329,6 +4335,12 @@ msgstr ""
 #. chrys-meta={"fingerprint":"8ac8e871c1054b225ad535aacd477e5087154131036e2b64a421fcf0839ee9da","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
 msgid "tui.buddy_config.appearance.picker.title"
+msgstr ""
+
+#. English: Preview
+#. chrys-meta={"fingerprint":"fe3d86ca21abdfd7b8cef357d4c202750c1dc0e6d6428a503651683b402e1899","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.preview"
 msgstr ""
 
 #. English: Built-in

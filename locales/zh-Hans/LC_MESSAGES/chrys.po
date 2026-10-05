@@ -4341,6 +4341,12 @@ msgstr "应用"
 msgid "tui.buddy_config.action.close"
 msgstr "关闭"
 
+#. English: Hatch
+#. chrys-meta={"fingerprint":"70e6ae443af11e40a421e70bfdfb15615133eeb995a6001a31dd224ebdf7af87","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/profile.py
+msgid "tui.buddy_config.action.hatch"
+msgstr "孵蛋"
+
 #. English: Import
 #. chrys-meta={"fingerprint":"1e974c8a0fc93af4325ba12ec3143785d96e73d9b34f087a10937a3eed3f5d48","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
@@ -4377,6 +4383,12 @@ msgstr "文件名为 <species>_<frame>.png；缺少某帧则用该帧的内置�
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
 msgid "tui.buddy_config.appearance.picker.title"
 msgstr "选择这帧的贴图"
+
+#. English: Preview
+#. chrys-meta={"fingerprint":"fe3d86ca21abdfd7b8cef357d4c202750c1dc0e6d6428a503651683b402e1899","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.preview"
+msgstr "预览"
 
 #. English: Built-in
 #. chrys-meta={"fingerprint":"33a7ee1778e089e2f37f6c99829a838bb2c635dd8dd30240530b59503dad2c53","multiline":false,"placeholders":[]}
