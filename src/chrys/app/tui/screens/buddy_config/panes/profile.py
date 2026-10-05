@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -12,11 +12,16 @@ from textual.widget import Widget
 from textual.widgets import Static
 
 from chrys.app.features.buddy.commands import buddy_card
+from chrys.app.features.buddy.portrait import PORTRAIT_WIDTH
 from chrys.app.tui.i18n import render_str
+from chrys.app.tui.util.visibility import is_widget_shown_on_active_screen
 from chrys.foundation.i18n import MessageRef, msg
 from chrys.foundation.i18n.formatting import format_message
 
 if TYPE_CHECKING:
+    from textual.geometry import Region
+    from textual.timer import Timer
+
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.screens.buddy_config.ports import BuddyConfigPorts
 
@@ -34,7 +39,10 @@ class ProfilePane(Widget):
 
     DEFAULT_CSS = """
     ProfilePane { height: 1fr; }
-    ProfilePane #buddy-config-portrait { width: 32; height: auto; }
+    /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = PIXEL_WIDTH + 4 = 24,
+       PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
+       place instead of re-laying out (a bare width or height:auto would). */
+    ProfilePane #buddy-config-portrait { width: 24; height: 11; }
     ProfilePane #buddy-config-facts { height: auto; }
     """
 
@@ -42,13 +50,15 @@ class ProfilePane(Widget):
         super().__init__()
         self._ports = ports
         self._locale_controller = locale_controller
+        self._timer: Timer | None = None
+        self._portrait: _BuddyPortrait | None = None
 
     def compose(self) -> ComposeResult:
         yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
         yield Static("", id="buddy-config-facts")
 
     def render_body(self) -> str:
-        """The fact sheet as plain text (used by tests and the title bar)."""
+        """The pane's plain-text body."""
         buddy = self._ports.buddy()
         if buddy is None:
             return self._render_message(_EMPTY_HINT.bind())
@@ -56,10 +66,27 @@ class ProfilePane(Widget):
 
     def on_mount(self) -> None:
         self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
-        self.set_interval(_PORTRAIT_TICK_SECONDS, self._tick)
+        self._portrait = self.query_one(_BuddyPortrait)
+        self._timer = self.set_interval(_PORTRAIT_TICK_SECONDS, self._tick)
+        # A pane mounted inside a hidden container never receives Show, so the
+        # first tick parks the timer until an on_show resumes it.
+        self._tick()
+
+    def on_show(self) -> None:
+        if self._timer is not None:
+            self._timer.resume()
+
+    def on_hide(self) -> None:
+        if self._timer is not None:
+            self._timer.pause()
 
     def _tick(self) -> None:
-        self.query_one(_BuddyPortrait).tick()
+        if not is_widget_shown_on_active_screen(self):
+            if self._timer is not None:
+                self._timer.pause()
+            return
+        if self._portrait is not None:
+            self._portrait.tick()
 
     def _render_message(self, reference: MessageRef) -> str:
         controller = self._locale_controller
@@ -76,22 +103,43 @@ class _BuddyPortrait(Static):
         self._ports = ports
         self._tick_count = 0
 
+    def refresh(
+        self,
+        *regions: Region,
+        repaint: bool = True,
+        layout: bool = False,
+        recompose: bool = False,
+    ) -> Self:
+        if not regions and repaint and not layout and not recompose and self.is_mounted:
+            # Static.update(layout=False) otherwise dirties via Widget.size,
+            # which resolves the full compositor map. Explicit regions use
+            # only cached geometry; include borders/padding in this full repaint.
+            regions = (self.outer_size.region - self.content_offset,)
+        return super().refresh(*regions, repaint=repaint, layout=layout, recompose=recompose)
+
     def tick(self) -> None:
         from chrys.app.features.buddy.animation import get_idle_frame
-        from chrys.app.features.buddy.portrait import PORTRAIT_WIDTH, render_portrait
+        from chrys.app.features.buddy.portrait import render_portrait
 
         buddy = self._ports.buddy()
         if buddy is None:
-            self.update(Text(""))
+            self.update(Text(""), layout=False)
             return
         frame, blink = get_idle_frame(buddy.species, self._tick_count)
         self._tick_count += 1
+        # content_size resolves region through the compositor and can arrange
+        # the entire screen. outer_size is the latest cached layout size.
+        _base_background, background = self.background_colors
+        width = max(0, self.outer_size.width - self.styles.gutter.width)
         lines = render_portrait(
             buddy.appearance,
             buddy.display_name,
             frame,
             blink,
-            width=self.content_size.width or PORTRAIT_WIDTH,
+            width=width or PORTRAIT_WIDTH,
             effect_tick=self._tick_count,
+            bg_rgb=None if self.app.current_theme.ansi else background.rgb,
         )
-        self.update(Text("\n").join(lines))
+        # The portrait size is fixed by CSS; frames only repaint. layout=True
+        # here would force a full-screen arrange per animation tick.
+        self.update(Text("\n").join(lines), layout=False)
