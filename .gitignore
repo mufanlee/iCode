@@ -16,6 +16,9 @@ __pycache__/
 venv/
 env/
 
+# Git worktrees (isolated feature checkouts)
+.worktrees/
+
 # IDE
 .idea/
 .vscode/
