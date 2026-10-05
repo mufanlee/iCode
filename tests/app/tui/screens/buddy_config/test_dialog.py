@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from textual.app import App, ComposeResult
 from textual.containers import Container
+from textual.widgets import Input, Select, Switch
 
 from chrys.app.tui.theme import TuiVariableDefaultsMixin
 from tests.app.tui.screens.buddy_config.support import StubPorts
+from tests.support.tui_helpers import click_when_settled
 from tests.support.waiting import wait_for
 
 
@@ -73,3 +75,77 @@ async def test_settings_pane_rejects_an_empty_name() -> None:
 
     assert ("rename", "   ") not in ports.calls
     assert any(kind == "notify" for kind, _ in ports.calls)
+
+
+def _settings_pane_app(ports: StubPorts) -> App[None]:
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+
+    class SettingsPaneApp(TuiVariableDefaultsMixin, App[None]):
+        # The dialog supplies this layout; the bare harness needs it so the
+        # Apply button sits beside the Input instead of off the right edge.
+        CSS = "#buddy-config-name { width: 1fr; }"
+
+        def compose(self) -> ComposeResult:
+            yield SettingsPane(ports, locale_controller=None)
+
+    return SettingsPaneApp()
+
+
+async def test_settings_pane_wires_controls_without_writing_on_mount() -> None:
+    """Mounting posts the Select's initial value; it must not be written back."""
+    ports = StubPorts(model_choices=[("", "Follow active"), ("m", "M")])
+
+    async with _settings_pane_app(ports).run_test(size=(80, 24)) as pilot:
+        await wait_for(
+            lambda: list(pilot.app.query("#buddy-config-model")),
+            pilot=pilot,
+            description="the settings pane mounts its model select",
+        )
+        assert not any(kind in {"model", "muted"} for kind, _ in ports.calls)
+
+        name = pilot.app.query_one("#buddy-config-name", Input)
+        name.value = "Mochi"
+        await click_when_settled(pilot, "#buddy-config-name-apply")
+        await wait_for(
+            lambda: ("rename", "Mochi") in ports.calls,
+            pilot=pilot,
+            description="applying the name renames the buddy",
+        )
+
+        switch = pilot.app.query_one("#buddy-config-muted", Switch)
+        muted = not switch.value
+        switch.value = muted
+        await wait_for(
+            lambda: ("muted", muted) in ports.calls,
+            pilot=pilot,
+            description="toggling the switch writes the muted flag",
+        )
+
+        pilot.app.query_one("#buddy-config-model", Select).value = "m"
+        await wait_for(
+            lambda: ("model", "m") in ports.calls,
+            pilot=pilot,
+            description="picking a model writes the reply model",
+        )
+
+
+async def test_settings_pane_falls_back_when_the_reply_model_is_stale() -> None:
+    """A stored model id that is no longer offered must not abort the mount."""
+    ports = StubPorts(reply_model_value="gone", model_choices=[("", "Follow active"), ("m", "M")])
+
+    async with _settings_pane_app(ports).run_test(size=(80, 24)) as pilot:
+        select = pilot.app.query_one("#buddy-config-model", Select)
+        await wait_for(
+            lambda: str(select.value) == "" and ("model", "") in ports.calls,
+            pilot=pilot,
+            description="the stale reply model falls back to follow and heals the stored id",
+        )
+
+
+def test_model_choices_relabels_the_empty_value() -> None:
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+
+    ports = StubPorts(model_choices=[("", "Follow active"), ("m", "M")])
+    pane = SettingsPane(ports, locale_controller=None)
+
+    assert pane._model_choices() == [("Follow the active model", ""), ("M", "m")]

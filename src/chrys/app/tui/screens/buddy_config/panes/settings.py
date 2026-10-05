@@ -54,12 +54,14 @@ class SettingsPane(Widget):
         yield Static(self._render_message(_MUTED_LABEL.bind()), classes="field")
         yield Switch(value=buddy.muted if buddy is not None else False, id="buddy-config-muted")
         yield Static(self._render_message(_MODEL_LABEL.bind()), classes="field")
-        yield Select(
-            self._model_choices(),
-            value=self._ports.reply_model(),
-            allow_blank=False,
-            id="buddy-config-model",
-        )
+        choices = self._model_choices()
+        value = self._ports.reply_model()
+        # Select(allow_blank=False) rejects an initial value that is not among its
+        # options: a removed or renamed profile, or a stale stored id, would abort
+        # the eagerly mounted dialog. Fall back to the always-present follow option.
+        if value and value not in {stored for _, stored in choices}:
+            value = ""
+        yield Select(choices, value=value, allow_blank=False, id="buddy-config-model")
 
     def _model_choices(self) -> list[tuple[str, str]]:
         """Map the ports' ``(value, label)`` pairs to Select's ``(label, value)`` ones."""
@@ -85,7 +87,10 @@ class SettingsPane(Widget):
 
     @on(Select.Changed, "#buddy-config-model")
     async def _select_model(self, event: Select.Changed) -> None:
-        await self._ports.set_reply_model(str(event.value))
+        value = str(event.value)
+        if value == self._ports.reply_model():
+            return
+        await self._ports.set_reply_model(value)
 
     @on(Switch.Changed, "#buddy-config-muted")
     async def _toggle_muted(self, event: Switch.Changed) -> None:
