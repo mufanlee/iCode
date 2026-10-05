@@ -50,3 +50,26 @@ async def test_profile_pane_parks_its_portrait_timer_while_hidden() -> None:
 
         pilot.app.query_one(Container).display = True
         await wait_for(timer._active.is_set, pilot=pilot, description="Show restarts the portrait timer")
+
+
+async def test_settings_pane_commits_a_rename() -> None:
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+
+    ports = StubPorts()
+    pane = SettingsPane(ports, locale_controller=None)
+
+    await pane.commit_name("Mochi")
+
+    assert ("rename", "Mochi") in ports.calls
+
+
+async def test_settings_pane_rejects_an_empty_name() -> None:
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+
+    ports = StubPorts()
+    pane = SettingsPane(ports, locale_controller=None)
+
+    await pane.commit_name("   ")
+
+    assert ("rename", "   ") not in ports.calls
+    assert any(kind == "notify" for kind, _ in ports.calls)

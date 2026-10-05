@@ -1,0 +1,98 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
+
+"""The dialog's Settings tab: name, mute and reply-model controls."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from textual import on
+from textual.app import ComposeResult
+from textual.containers import Horizontal
+from textual.widget import Widget
+from textual.widgets import Button, Input, Select, Static, Switch
+
+from chrys.app.features.buddy.model import clean_name
+from chrys.app.tui.i18n import render_str
+from chrys.foundation.i18n import MessageRef, msg
+from chrys.foundation.i18n.formatting import format_message
+
+if TYPE_CHECKING:
+    from chrys.app.tui.i18n import LocaleController
+    from chrys.app.tui.screens.buddy_config.ports import BuddyConfigPorts
+
+_NAME_LABEL = msg("tui.buddy_config.field.name", fallback="Name")
+_MUTED_LABEL = msg("tui.buddy_config.field.muted", fallback="Muted")
+_MODEL_LABEL = msg("tui.buddy_config.field.reply_model", fallback="Reply model")
+_FOLLOW = msg("tui.buddy_config.reply_model.follow", fallback="Follow the active model")
+_APPLY = msg("tui.buddy_config.action.apply", fallback="Apply")
+_NAME_EMPTY = msg(
+    "tui.buddy_config.toast.name_empty",
+    fallback="A name has to be at least one visible character.",
+)
+
+
+class SettingsPane(Widget):
+    """Edits that commit the moment they are made."""
+
+    DEFAULT_CSS = """
+    SettingsPane { height: 1fr; }
+    SettingsPane .field { height: auto; margin: 1 0; }
+    """
+
+    def __init__(self, ports: BuddyConfigPorts, *, locale_controller: LocaleController | None = None) -> None:
+        super().__init__()
+        self._ports = ports
+        self._locale_controller = locale_controller
+
+    def compose(self) -> ComposeResult:
+        buddy = self._ports.buddy()
+        yield Static(self._render_message(_NAME_LABEL.bind()), classes="field")
+        with Horizontal(classes="field"):
+            yield Input(value=buddy.name if buddy is not None else "", id="buddy-config-name")
+            yield Button(self._render_message(_APPLY.bind()), id="buddy-config-name-apply")
+        yield Static(self._render_message(_MUTED_LABEL.bind()), classes="field")
+        yield Switch(value=buddy.muted if buddy is not None else False, id="buddy-config-muted")
+        yield Static(self._render_message(_MODEL_LABEL.bind()), classes="field")
+        yield Select(
+            self._model_choices(),
+            value=self._ports.reply_model(),
+            allow_blank=False,
+            id="buddy-config-model",
+        )
+
+    def _model_choices(self) -> list[tuple[str, str]]:
+        """Map the ports' ``(value, label)`` pairs to Select's ``(label, value)`` ones."""
+        return [
+            (self._render_message(_FOLLOW.bind()) if value == "" else label, value)
+            for value, label in self._ports.model_options()
+        ]
+
+    async def commit_name(self, value: str) -> None:
+        """Apply a typed name. A name that cleans to nothing is refused."""
+        if not clean_name(value):
+            self._ports.notify(self._render_message(_NAME_EMPTY.bind()), severity="warning", timeout=10)
+            return
+        await self._ports.rename(value)
+
+    @on(Button.Pressed, "#buddy-config-name-apply")
+    async def _apply_name(self) -> None:
+        await self.commit_name(self.query_one("#buddy-config-name", Input).value)
+
+    @on(Input.Submitted, "#buddy-config-name")
+    async def _submit_name(self) -> None:
+        await self.commit_name(self.query_one("#buddy-config-name", Input).value)
+
+    @on(Select.Changed, "#buddy-config-model")
+    async def _select_model(self, event: Select.Changed) -> None:
+        await self._ports.set_reply_model(str(event.value))
+
+    @on(Switch.Changed, "#buddy-config-muted")
+    async def _toggle_muted(self, event: Switch.Changed) -> None:
+        await self._ports.set_muted(event.value)
+
+    def _render_message(self, reference: MessageRef) -> str:
+        controller = self._locale_controller
+        if controller is None:
+            return format_message(reference)
+        return render_str(controller.localizer, reference)
