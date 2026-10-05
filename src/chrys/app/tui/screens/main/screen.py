@@ -197,7 +197,10 @@ _MODEL_UNCONFIGURED_MESSAGE = msg(
     fallback="Your message was not sent. Configure and select a model to get started.",
 )
 _MODEL_UNCONFIGURED_SETUP = msg("tui.model_guard.button.setup", fallback="Set up model")
-_BUDDY_FOLLOW_MODEL = msg("tui.buddy_config.reply_model.follow", fallback="Follow the active model")
+_BUDDY_ASSETS_OPEN_UNAVAILABLE = msg(
+    "tui.buddy_config.open_assets.unavailable",
+    fallback="Opening the buddy assets folder is not available in the current environment.",
+)
 
 _TERMINAL_TITLE_ACTIVITY_INTERVAL_SECONDS = 0.65
 _TERMINAL_TITLE_RUNNING_FRAMES = ("◇", "◈", "◆", "◈")
@@ -670,13 +673,24 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         self.notify(text, severity=severity, timeout=timeout, markup=False)
 
     def _buddy_model_options(self) -> list[tuple[str, str]]:
-        """The reply-model picker's options: follow the active model, then every model id."""
-        follow = render_str(self._language_localizer(), _BUDDY_FOLLOW_MODEL.bind())
-        options: list[tuple[str, str]] = [("", follow)]
+        """The reply-model picker's options: follow the active model, then every model id.
+
+        The blank "follow" entry carries an empty label: the pane owns its text.
+        A configured id the registry no longer offers is appended so the user
+        sees the model they actually set rather than a silent fall back to
+        follow, mirroring the settings dialog's ``_options_with``.
+        """
+        options: list[tuple[str, str]] = [("", "")]
         registry = self._services.model_registry
+        model_ids: list[str] = []
         if registry is not None:
-            model_ids = dict.fromkeys(profile.model_id for profile in registry.list_profiles() if profile.model_id)
+            model_ids = list(
+                dict.fromkeys(profile.model_id for profile in registry.list_profiles() if profile.model_id)
+            )
             options.extend((model_id, model_id) for model_id in model_ids)
+        current = cast("ChrysApp", self.app).settings_handle.settings.buddy_model
+        if current and current not in model_ids:
+            options.append((current, current))
         return options
 
     def _open_path_in_os(self, path: Path) -> None:
@@ -684,6 +698,11 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         from chrys.app.tui.support.file_manager import can_open_in_file_manager, open_in_file_manager
 
         if not can_open_in_file_manager():
+            self.notify(
+                render_str(self._language_localizer(), _BUDDY_ASSETS_OPEN_UNAVAILABLE.bind()),
+                severity="warning",
+                markup=False,
+            )
             return
         open_in_file_manager(path)
 

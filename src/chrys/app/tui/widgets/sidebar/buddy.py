@@ -174,6 +174,8 @@ class BuddyPanel(Widget):
         yield Static("", id="buddy-level")
         yield Static("", id="buddy-status")
         yield Static("", id="buddy-info")
+        # Deliberately not part of _CONTENT_IDS: configuration is always available,
+        # so the button stays visible even in the no-buddy empty state.
         yield Button(self._render_message(_BUDDY_CONFIGURE.bind()), id="buddy-configure", classes="buddy-configure")
 
     def on_mount(self) -> None:
@@ -380,6 +382,7 @@ class BuddyPanel(Widget):
 
     def on_click(self, event: Click) -> None:
         """Pet the buddy on click."""
+        # Defence-in-depth over Button's own click stop: a configure click must never pet the buddy.
         if event.widget is not None and event.widget.id == "buddy-configure":
             return
         if self.buddy is not None:
