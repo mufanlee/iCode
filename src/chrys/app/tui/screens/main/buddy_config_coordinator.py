@@ -5,20 +5,20 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from chrys.app.features.buddy import actions, assets, pixel_sprites
-from chrys.app.features.buddy.model import Buddy, Species
 from chrys.app.tui.screens.buddy_config import FrameState
 from chrys.foundation.i18n import msg
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Mapping, Sequence
+    from typing import Any
 
+    from chrys.app.features.buddy.model import Buddy, Species
     from chrys.foundation.config.settings import Settings
     from chrys.foundation.i18n import MessageRef
 
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 REPLY_MODEL_KEY = "model.role.buddy_model_id"
 _SAVE_FAILED = msg("tui.buddy_config.toast.save_failed", fallback="Buddy save file could not be updated")
 _IMPORT_FAILED = msg("tui.buddy_config.toast.install_failed", fallback="Buddy artwork could not be installed")
+_REMOVE_FAILED = msg("tui.buddy_config.toast.remove_failed", fallback="Buddy artwork could not be removed")
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +36,6 @@ class BuddyConfigCallbacks:
 
     save_settings: Callable[[Mapping[str, Any], tuple[str, ...]], Awaitable[None]]
     notify: Callable[..., None]
-    push_screen: Callable[..., Any]
     settings: Callable[[], Settings]
     model_options: Callable[[], Sequence[tuple[str, str]]]
     open_path: Callable[[Path], None]
@@ -97,8 +97,11 @@ class BuddyConfigCoordinator:
         species = self.species()
         if species is None:
             return
-        with contextlib.suppress(OSError):
+        try:
             await asyncio.to_thread(assets.remove_frame, species, frame)
+        except OSError:
+            logger.warning("Buddy artwork could not be removed", exc_info=True)
+            self._warn(_REMOVE_FAILED.bind())
 
     async def set_reply_model(self, model_id: str) -> None:
         if model_id:
@@ -108,9 +111,11 @@ class BuddyConfigCoordinator:
 
     def open_assets_dir(self) -> None:
         directory = self.assets_dir()
-        with contextlib.suppress(Exception):
+        try:
             directory.mkdir(parents=True, exist_ok=True)
             self._callbacks.open_path(directory)
+        except OSError:
+            logger.warning("Buddy assets folder could not be opened", exc_info=True)
 
     def notify(self, message: MessageRef | str, *, severity: str = "information", timeout: float = 10) -> None:
         self._callbacks.notify(message, severity=severity, timeout=timeout)
