@@ -597,3 +597,186 @@ async def test_dialog_removes_a_frame_through_the_appearance_tab(tmp_path) -> No
             pilot=pilot,
             description="removing a frame in the dialog drops its custom artwork",
         )
+
+
+async def test_appearance_preview_defaults_to_frame_zero() -> None:
+    from textual.containers import Horizontal
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pane = pilot.app.query_one(AppearancePane)
+        assert pane.selected_frame == 0
+        assert pilot.app.query_one("#frame-row-0", Horizontal).has_class("-selected")
+
+        preview = pilot.app.query_one("#buddy-config-frame-preview", Static)
+        await wait_for(
+            lambda: getattr(preview.content, "markup", ""),
+            pilot=pilot,
+            description="the preview renders the buddy portrait for the default frame",
+        )
+
+
+async def test_appearance_clicking_a_row_switches_the_previewed_frame() -> None:
+    from textual.containers import Horizontal
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pane = pilot.app.query_one(AppearancePane)
+        preview = pilot.app.query_one("#buddy-config-frame-preview", Static)
+        await wait_for(
+            lambda: getattr(preview.content, "markup", ""),
+            pilot=pilot,
+            description="the preview renders frame 0",
+        )
+        frame_zero = preview.content.markup
+
+        await click_when_settled(pilot, "#frame-state-3")
+        await wait_for(
+            lambda: pane.selected_frame == 3,
+            pilot=pilot,
+            description="clicking a frame row selects that frame",
+        )
+
+        assert pilot.app.query_one("#frame-row-3", Horizontal).has_class("-selected")
+        assert not pilot.app.query_one("#frame-row-0", Horizontal).has_class("-selected")
+        await wait_for(
+            lambda: preview.content.markup != frame_zero,
+            pilot=pilot,
+            description="the preview repaints for the newly selected frame",
+        )
+
+
+async def test_appearance_import_repaints_the_selected_preview(tmp_path, monkeypatch) -> None:
+    from PIL import Image
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+    species = ports.buddy().species.value
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pane = pilot.app.query_one(AppearancePane)
+        preview = pilot.app.query_one("#buddy-config-frame-preview", Static)
+        await wait_for(
+            lambda: getattr(preview.content, "markup", ""),
+            pilot=pilot,
+            description="the preview renders the built-in frame",
+        )
+        built_in = preview.content.markup
+
+        # The pane is selected on frame 0 by default, so importing frame 0 must repaint it.
+        target = tmp_path / f"{species}_0.png"
+        Image.new("RGBA", (20, 16), (255, 0, 0, 255)).save(target)
+        ports.custom_frames = {0}
+        await pane.import_into(0, target)
+
+        await wait_for(
+            lambda: preview.content.markup != built_in,
+            pilot=pilot,
+            description="the imported custom artwork repaints the preview",
+        )
+        assert preview.content.markup != built_in
+
+
+async def test_appearance_removal_repaints_the_selected_preview(tmp_path, monkeypatch) -> None:
+    from PIL import Image
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+    species = ports.buddy().species.value
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
+
+    async with _appearance_pane_app(ports).run_test(size=(60, 30)) as pilot:
+        pane = pilot.app.query_one(AppearancePane)
+        preview = pilot.app.query_one("#buddy-config-frame-preview", Static)
+        await wait_for(
+            lambda: getattr(preview.content, "markup", ""),
+            pilot=pilot,
+            description="the preview renders the built-in frame",
+        )
+        built_in = preview.content.markup
+
+        # The pane is selected on frame 0 by default, so removing frame 0's custom
+        # artwork must paint the preview back to the built-in sprite.
+        target = tmp_path / f"{species}_0.png"
+        Image.new("RGBA", (20, 16), (255, 0, 0, 255)).save(target)
+        ports.custom_frames = {0}
+        await pane.import_into(0, target)
+        await wait_for(
+            lambda: preview.content.markup != built_in,
+            pilot=pilot,
+            description="the imported custom artwork repaints the preview",
+        )
+
+        target.unlink()
+        ports.custom_frames = set()
+        await pane.remove_frame(0)
+        await wait_for(
+            lambda: preview.content.markup == built_in,
+            pilot=pilot,
+            description="removing the custom artwork restores the built-in preview",
+        )
+        assert preview.content.markup == built_in
+
+
+async def test_appearance_last_row_buttons_stay_reachable(tmp_path) -> None:
+    from textual.containers import Horizontal
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from chrys.app.tui.screens.dialogs.file_picker import FilePicker
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-appearance")
+
+        pane = dialog.query_one(AppearancePane)
+        # The pane scrolls its preview + six rows; bring the last row into view.
+        dialog.query_one("#frame-row-5", Horizontal).scroll_visible(animate=False)
+        await pilot.pause()
+
+        await click_when_settled(pilot, "#frame-remove-5")
+        await wait_for(
+            lambda: ("remove", 5) in ports.calls,
+            pilot=pilot,
+            description="the last row's Remove button is still clickable",
+        )
+        # A row's button must not change the previewed frame.
+        assert pane.selected_frame == 0
+
+        await click_when_settled(pilot, "#frame-import-5")
+        await wait_for(
+            lambda: isinstance(app.screen, FilePicker),
+            pilot=pilot,
+            description="the last row's Import button is still clickable",
+        )
+
+        # The import check leaves its picker on top; close it so the dialog is
+        # active again, then the open-folder button below the last row must
+        # stay reachable too.
+        await pilot.press("escape")
+        await wait_for(lambda: app.screen is dialog, pilot=pilot, description="the picker closes back to the dialog")
+        dialog.query_one("#buddy-config-open-folder").scroll_visible(animate=False)
+        await pilot.pause()
+        await click_when_settled(pilot, "#buddy-config-open-folder")
+        await wait_for(
+            lambda: ("open_dir", None) in ports.calls,
+            pilot=pilot,
+            description="the open-folder button below the last row is still clickable",
+        )
