@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Any
 from PIL import Image
 
 from chrys.app.features.buddy.animation import IDLE_FRAME_COUNT
+from chrys.app.features.buddy.assets import assets_dir
 from chrys.app.features.buddy.model import Species
 from chrys.app.features.buddy.pixel_renderer import DEFAULT_BG_RGB, image_to_half_block_lines, matrix_to_image
-from chrys.foundation.platform import get_platform
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -1878,11 +1878,6 @@ DEFAULT_PIXEL_FRAMES: dict[Species, list[list[str]]] = {
 }
 
 
-def _get_assets_dir() -> Path:
-    """Get path to custom buddy pixel assets directory."""
-    return get_platform().config_dir / "extras" / "buddy" / "assets"
-
-
 @lru_cache(maxsize=128)
 def _load_external_asset(target_path: Path, _revision: tuple[int, int, int]) -> Image.Image:
     """Keep only resized artwork in a bounded cache, invalidated by file changes."""
@@ -1896,12 +1891,12 @@ def _load_external_asset(target_path: Path, _revision: tuple[int, int, int]) -> 
 
 
 def load_external_pixel_frame(species: Species, frame_idx: int) -> Image.Image | None:
-    """Load custom artwork from ~/.chrys/extras/buddy/assets/<species>_<frame_idx>.png.
+    """Load custom artwork from ``assets_dir()/<species>_<frame_idx>.png``.
 
     Checking the revision keeps edits and removals live without decoding the
     same PNG on every badge repaint. Callers receive their own mutable image.
     """
-    target_path = _get_assets_dir() / f"{species.value}_{frame_idx}.png"
+    target_path = assets_dir() / f"{species.value}_{frame_idx}.png"
     try:
         stat = target_path.stat()
         image = _load_external_asset(target_path, (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size))

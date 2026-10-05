@@ -82,7 +82,7 @@ def test_external_artwork_gets_the_same_frame_and_nameplate(tmp_path, monkeypatc
     from PIL import Image
 
     Image.new("RGBA", (16, 10), (210, 30, 80, 255)).save(tmp_path / "rabbit_0.png")
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     portrait = render_portrait(replace(_look(), rarity=Rarity.SSR, shiny=True), "Custom")
     assert portrait[-1].plain.strip() == "Custom [SSR] ✧"
     for row in portrait[1:-2]:
@@ -102,7 +102,7 @@ def test_narrow_custom_art_keeps_canvas_edges_and_vertical_alignment(tmp_path, m
     image = Image.new("RGBA", (20, 16), (*red, 255))
     image.paste((*green, 255), (10, 0, 20, 16))
     image.save(tmp_path / "rabbit_0.png")
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     portrait = render_portrait(_look(), "Custom", width=width, bg_rgb=background)
     assert len(portrait) == PORTRAIT_HEIGHT
     assert all(row.cell_len == width for row in portrait)

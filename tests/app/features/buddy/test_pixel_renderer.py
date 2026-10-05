@@ -83,7 +83,7 @@ def test_external_png_loading_override(tmp_path, monkeypatch, size):
     custom_img.save(assets_dir / "duck_0.png")
 
     monkeypatch.setattr(
-        "chrys.app.features.buddy.pixel_sprites._get_assets_dir",
+        "chrys.app.features.buddy.pixel_sprites.assets_dir",
         lambda: assets_dir,
     )
 
