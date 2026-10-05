@@ -1547,3 +1547,23 @@ Performance and guards appear in Tasks 10 and 13. All covered.
 `render_portrait` keyword args (`widgets/sidebar/buddy.py`), the settings-persistence accessor name in
 `screen.py`, `Switch` availability in the pinned Textual, and `_open_path_in_os` (may need a small platform helper
 in `foundation/platform/`). If any of these differ, adjust the call site — the interfaces above do not change.
+
+---
+
+## Implementation notes / deviations from the plan
+
+The shipped code follows the plan's design but differs from its literal snippets in
+these ways:
+
+- `frame_state` is decided by `pixel_sprites.load_external_pixel_frame(species, frame) is not None`
+  (the frame is "present **and** loads"), not by `assets.is_custom_frame`. This matches the
+  renderer's silent fallback: an unreadable or undecodable file reads as `BUILTIN`.
+- The ports gained `hatch()` (the empty state's inline hatch), and `BuddyConfigCallbacks`
+  has no `push_screen` field.
+- The Appearance pane's remove method is `remove_frame`, not `remove` (it must not shadow
+  `Widget.remove`).
+- The Appearance pane gained a selected-frame preview, and each frame row is a `Horizontal`
+  (so the state label and the Import/Remove buttons sit on one line).
+- The dialog is 32 rows tall and the Appearance pane scrolls its preview plus six rows.
+- `_render_message(reference)` (localizer-or-fallback, rendered via `render_str`) replaced
+  the plan's `_t(controller, ref)` calls.

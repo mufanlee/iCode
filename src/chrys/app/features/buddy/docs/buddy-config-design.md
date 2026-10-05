@@ -1,6 +1,6 @@
 # Buddy configuration dialog
 
-Status: design approved 2026-10-04 (not yet implemented)
+Status: design approved 2026-10-04; implemented on `feat/buddy-config`.
 
 A single modal, opened by `/buddy config` or from the sidebar Buddy tab, that
 lets the user see their buddy and make the few changes the design permits:
@@ -75,10 +75,10 @@ failures into toasts.
   that pushes the dialog instead of going through `handle_buddy_command`. Always
   available; the dialog shows its empty (egg) state when no buddy exists. The
   existing subcommand hint list still leads with `hatch` when there is no buddy.
-- Sidebar: a ⚙ button at the bottom of `BuddyPanel`. It posts a
-  `BuddyPanel.ConfigRequested` message; `MainScreen` handles it and calls the
-  same open path. The button consumes its click (`ClickAffordance` semantics:
-  `prevent_default()` + `stop()`) so it never also pets the buddy.
+- Sidebar: a labelled **Configure** button at the bottom of `BuddyPanel`. It
+  posts a `BuddyPanel.ConfigRequested` message; `MainScreen` handles it and
+  calls the same open path. Its `Pressed` handler stops the event, and a click
+  guard keeps a configure click from also petting the buddy.
 
 ## Interfaces
 
@@ -152,14 +152,18 @@ the dialog is open is not pushed into it; reopening shows it. This is accepted
   right: name, species, rarity (with evolution stage), shiny, the four traits
   with their growth, level/XP, hatched date, turns/pets, persona. Values are
   formatted like `commands.buddy_card`.
-- **Appearance** — a portrait preview (default frame 0, switchable) on top; six
-  rows (frame 0–5) each showing state (built-in/custom) and `[Import]` /
+- **Appearance** — a portrait preview (default frame 0, switchable by clicking a
+  frame row) on top; six rows (frame 0–5) each showing state (built-in/custom)
+  and `[Import]` /
   `[Remove]`; a footer line `[Open folder]` and a hint naming
   `<species>_<frame>.png`. Import uses the existing
   `screens/dialogs/file_picker.py::FilePicker` in `FilePickerMode.FILE` filtered
   to `.png`.
 - **Settings** — name `Input` + `[Apply]`; mute switch; reply-model `Select`
-  whose first option is "follow the active model" (value `""`).
+  whose first option is "follow the active model" (value `""`). Unlike the rest
+  of the chrome, the `Select`'s option labels deliberately do not retranslate on
+  a live locale switch: resetting its options would re-post `Changed` and write
+  the value back through the ports. A documented residual, not an API limit.
 - **Footer** — `[Re-hatch]` (danger styling, opens `screens/dialogs/confirm.py`
   first) + `[Close]` + a status line ("Changes are saved as you make them").
 - **Empty state** — with no buddy, the Profile tab shows the egg and a hint
