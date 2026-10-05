@@ -270,6 +270,45 @@ async def test_dialog_opens_on_the_profile_tab(tmp_path) -> None:
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
 
 
+async def test_dialog_frames_the_tabs_and_buttons_in_one_centered_container(tmp_path) -> None:
+    """The dialog is one centred, bordered box holding the tabs and the buttons."""
+    from textual.containers import VerticalGroup
+    from textual.widgets import TabbedContent
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        # One bordered container carries the frame and its title; the tabs no
+        # longer do, and no sibling footer sits outside the box.
+        container = dialog.query_one("#buddy-config-container", VerticalGroup)
+        assert container.border_title is not None
+        assert dialog.query_one("#buddy-config-tabs", TabbedContent).border_title is None
+        assert list(dialog.query("#buddy-config-footer")) == []
+
+        # Defect 2: the docked button row lives inside the framed box.
+        buttons = dialog.query_one("#buddy-config-buttons")
+        assert container.region.contains_region(buttons.region)
+
+        # Defect 1: the container is centred in the screen (equal side margins).
+        screen = dialog.region
+        left_margin = container.region.x - screen.x
+        right_margin = screen.right - container.region.right
+        assert left_margin > 0
+        assert left_margin == right_margin
+
+        await pilot.press("escape")
+        await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
+
+
 async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> None:
     from textual.widgets import Button, TabbedContent
 
@@ -554,7 +593,9 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
 
         assert str(close.label) == "ZH-MARK"
         assert str(dialog.query_one("#buddy-config-rehatch", Button).label) == "ZH-MARK"
-        assert str(dialog.query_one("#buddy-config-status", Static).content) == "ZH-MARK"
+        container = dialog.query_one("#buddy-config-container")
+        assert str(container.border_title) == "ZH-MARK"
+        assert str(container.border_subtitle) == "ZH-MARK"
         assert str(dialog.query_one("#buddy-config-name-label", Static).content) == "ZH-MARK"
 
         await pilot.press("escape")

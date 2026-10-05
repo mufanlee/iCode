@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, ClassVar
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Horizontal
+from textual.containers import VerticalGroup
 from textual.content import Content
-from textual.widgets import Button, Static, TabbedContent, TabPane
+from textual.widgets import Button, TabbedContent, TabPane
 
 from chrys.app.tui.binding_display import CLOSE_BINDING, localized_binding
 from chrys.app.tui.i18n import render_str
@@ -19,6 +19,7 @@ from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
 from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
 from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 from chrys.app.tui.screens.dialogs.base import BaseDialog
+from chrys.app.tui.widgets import DialogButtonRow, DialogButtonSpec
 from chrys.foundation.i18n import MessageDef, MessageRef, msg
 from chrys.foundation.i18n.formatting import format_message
 
@@ -75,31 +76,38 @@ class BuddyConfigDialog(BaseDialog[None]):
 
     def compose(self) -> ComposeResult:
         has_buddy = self._ports.buddy() is not None
-        with TabbedContent(initial=PROFILE_TAB_ID, id="buddy-config-tabs") as tabs:
-            tabs.border_title = Text(self._render_message(_TITLE.bind()))
-            with TabPane(self._tab_label(_TAB_PROFILE.bind()), id=PROFILE_TAB_ID):
-                yield ProfilePane(self._ports, locale_controller=self._locale_controller)
-            if has_buddy:
-                with TabPane(self._tab_label(_TAB_APPEARANCE.bind()), id=APPEARANCE_TAB_ID):
-                    yield AppearancePane(self._ports, locale_controller=self._locale_controller)
-                with TabPane(self._tab_label(_TAB_SETTINGS.bind()), id=SETTINGS_TAB_ID):
-                    yield SettingsPane(self._ports, locale_controller=self._locale_controller)
-        with Horizontal(id="buddy-config-footer"):
-            rehatch = Button(
-                Text(self._render_message(_REHATCH.bind())),
-                id="buddy-config-rehatch",
-                variant="error",
+        with VerticalGroup(id="buddy-config-container") as container:
+            container.border_title = Text(self._render_message(_TITLE.bind()))
+            container.border_subtitle = Text(self._render_message(_STATUS.bind()))
+            with TabbedContent(initial=PROFILE_TAB_ID, id="buddy-config-tabs"):
+                with TabPane(self._tab_label(_TAB_PROFILE.bind()), id=PROFILE_TAB_ID):
+                    yield ProfilePane(self._ports, locale_controller=self._locale_controller)
+                if has_buddy:
+                    with TabPane(self._tab_label(_TAB_APPEARANCE.bind()), id=APPEARANCE_TAB_ID):
+                        yield AppearancePane(self._ports, locale_controller=self._locale_controller)
+                    with TabPane(self._tab_label(_TAB_SETTINGS.bind()), id=SETTINGS_TAB_ID):
+                        yield SettingsPane(self._ports, locale_controller=self._locale_controller)
+            yield DialogButtonRow(
+                DialogButtonSpec(
+                    Text(self._render_message(_REHATCH.bind())),
+                    id="buddy-config-rehatch",
+                    variant="error",
+                ),
+                DialogButtonSpec(
+                    Text(self._render_message(_CLOSE.bind())),
+                    id="buddy-config-close",
+                    variant="warning",
+                ),
+                id="buddy-config-buttons",
             )
-            # Hidden, not merely disabled, while no buddy exists (the design's
-            # empty state); revealed when a hatch lands.
-            rehatch.display = has_buddy
-            yield rehatch
-            yield Button(Text(self._render_message(_CLOSE.bind())), id="buddy-config-close")
-            yield Static(Text(self._render_message(_STATUS.bind())), id="buddy-config-status")
 
     def on_mount(self) -> None:
         if self._locale_controller is not None:
             self._locale_controller.register_surface(self)
+        # Hidden, not merely disabled, while no buddy exists (the design's empty
+        # state); revealed when a hatch lands. The button spec cannot express
+        # ``display``, so set it once the row is mounted.
+        self.query_one("#buddy-config-rehatch", Button).display = self._ports.buddy() is not None
 
     def on_unmount(self) -> None:
         if self._locale_controller is not None:
@@ -107,14 +115,15 @@ class BuddyConfigDialog(BaseDialog[None]):
 
     def refresh_localization(self) -> None:
         """Replace this dialog's chrome text in place, then let each pane retitle itself."""
+        container = self.query_one("#buddy-config-container", VerticalGroup)
+        container.border_title = Text(self._render_message(_TITLE.bind()))
+        container.border_subtitle = Text(self._render_message(_STATUS.bind()))
         tabs = self.query_one("#buddy-config-tabs", TabbedContent)
-        tabs.border_title = Text(self._render_message(_TITLE.bind()))
         for tab_id, definition in _TAB_SPECS:
             if self.query(f"#{tab_id}"):
                 tabs.get_tab(tab_id).label = self._tab_label(definition.bind())
         self.query_one("#buddy-config-rehatch", Button).label = Text(self._render_message(_REHATCH.bind()))
         self.query_one("#buddy-config-close", Button).label = Text(self._render_message(_CLOSE.bind()))
-        self.query_one("#buddy-config-status", Static).update(Text(self._render_message(_STATUS.bind())))
         for pane in self._panes():
             pane.refresh_localization()
 
