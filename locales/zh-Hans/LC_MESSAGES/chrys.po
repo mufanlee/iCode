@@ -3943,6 +3943,12 @@ msgstr "返回"
 msgid "tui.binding.break_agent"
 msgstr "中断"
 
+#. English: Buddy
+#. chrys-meta={"fingerprint":"b24977515f388242f6162756260851ee0929d9063bb635c662fc21f76399f966","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/screen.py
+msgid "tui.binding.buddy_config"
+msgstr "伙伴"
+
 #. English: Cancel
 #. chrys-meta={"fingerprint":"ee3eb6e02cd8772be8786b7d714f54bf90abe5d0f0523aebf9c292a1e48c7d3d","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/binding_display.py
@@ -10055,12 +10061,6 @@ msgstr "设置"
 msgid "tui.sidebar.buddy.click_to_pet"
 msgstr "点击抚摸！"
 
-#. English: Configure
-#. chrys-meta={"fingerprint":"8795f73c2b355641c5fdc66bf3e7dce65fb638ff128a11d37c43cddd0a6715fc","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/widgets/sidebar/buddy.py
-msgid "tui.sidebar.buddy.configure"
-msgstr "配置"
-
 #. English: No buddy hatched yet. Try /buddy hatch
 #. chrys-meta={"fingerprint":"9c029bf9e9b82b628a6b0d2f09ace1f35159eb485e62fd1afcd9985f7c9a1186","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/widgets/sidebar/buddy.py
@@ -14100,6 +14100,9 @@ msgstr "提示已被钩子阻止。"
 
 #~ msgid "tui.settings.section.web_search"
 #~ msgstr "网络搜索"
+
+#~ msgid "tui.sidebar.buddy.configure"
+#~ msgstr "配置"
 
 #~ msgid "tui.sidebar.buddy.personality"
 #~ msgstr "性格：{personality}"

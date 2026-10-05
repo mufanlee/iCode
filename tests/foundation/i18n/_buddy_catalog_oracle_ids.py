@@ -6,6 +6,7 @@ from __future__ import annotations
 
 BUDDY_MESSAGE_IDS = frozenset(
     {
+        "tui.binding.buddy_config",
         "tui.buddy.card.evolution",
         "tui.buddy.card.fully_grown",
         "tui.buddy.card.level",
@@ -72,6 +73,5 @@ BUDDY_MESSAGE_IDS = frozenset(
         "tui.buddy_config.toast.name_empty",
         "tui.buddy_config.toast.remove_failed",
         "tui.buddy_config.toast.save_failed",
-        "tui.sidebar.buddy.configure",
     }
 )
