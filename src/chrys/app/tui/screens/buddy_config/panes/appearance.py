@@ -57,6 +57,10 @@ class AppearancePane(Widget):
     DEFAULT_CSS = """
     AppearancePane { height: 1fr; }
     AppearancePane .frame-row { height: auto; }
+    /* Each row is a growing state label plus fixed-size Import/Remove buttons.
+       Without an explicit 1fr the label takes the whole 84-wide pane and clips
+       the buttons past the right edge, leaving them unreachable by pointer. */
+    AppearancePane .frame-row Static { width: 1fr; }
     """
 
     def __init__(self, ports: BuddyConfigPorts, *, locale_controller: LocaleController | None = None) -> None:

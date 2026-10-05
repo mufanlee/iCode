@@ -39,6 +39,10 @@ class SettingsPane(Widget):
     DEFAULT_CSS = """
     SettingsPane { height: 1fr; }
     SettingsPane .field { height: auto; margin: 1 0; }
+    /* The name row is a growing Input plus a fixed-size Apply button. Without
+       an explicit 1fr the Input takes the whole row and clips the button past
+       the pane's right edge, leaving it unreachable by pointer. */
+    SettingsPane #buddy-config-name { width: 1fr; }
     """
 
     def __init__(self, ports: BuddyConfigPorts, *, locale_controller: LocaleController | None = None) -> None:

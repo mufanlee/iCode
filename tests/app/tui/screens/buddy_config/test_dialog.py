@@ -81,10 +81,6 @@ def _settings_pane_app(ports: StubPorts) -> App[None]:
     from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 
     class SettingsPaneApp(TuiVariableDefaultsMixin, App[None]):
-        # The dialog supplies this layout; the bare harness needs it so the
-        # Apply button sits beside the Input instead of off the right edge.
-        CSS = "#buddy-config-name { width: 1fr; }"
-
         def compose(self) -> ComposeResult:
             yield SettingsPane(ports, locale_controller=None)
 
@@ -274,6 +270,59 @@ async def test_dialog_opens_on_the_profile_tab(tmp_path) -> None:
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
 
 
+async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> None:
+    from textual.widgets import Button, TabbedContent
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts(_buddy=None)
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: app.screen is dialog and dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        assert dialog.query_one(TabbedContent).tab_count == 1
+        assert len(dialog.query(ProfilePane)) == 1
+        assert list(dialog.query(AppearancePane)) == []
+        assert list(dialog.query(SettingsPane)) == []
+        assert dialog.query_one("#buddy-config-rehatch", Button).disabled
+
+
+async def test_dialog_switches_tabs_by_clicking_a_header(tmp_path) -> None:
+    from textual.widgets import TabbedContent
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.dialog import PROFILE_TAB_ID, SETTINGS_TAB_ID
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: app.screen is dialog and dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        tabs = dialog.query_one(TabbedContent)
+        assert dialog.active_tab == PROFILE_TAB_ID
+
+        await click_when_settled(pilot, tabs.get_tab(SETTINGS_TAB_ID))
+        await wait_for(
+            lambda: tabs.active == SETTINGS_TAB_ID,
+            pilot=pilot,
+            description="clicking the Settings tab header switches to it",
+        )
+        assert dialog.active_tab == SETTINGS_TAB_ID
+
+
 async def test_dialog_refreshes_the_panes_after_a_rehatch(tmp_path) -> None:
     from textual.widgets import Static
 
@@ -410,3 +459,141 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
 
     assert dialog in controller.unregistered
+
+
+async def _open_mounted_dialog(pilot, app, ports):
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+
+    dialog = BuddyConfigDialog(ports, locale_controller=None)
+    app.push_screen(dialog)
+    await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+    return dialog
+
+
+async def _show_tab(pilot, dialog, tab_id: str) -> None:
+    from textual.widgets import TabbedContent
+
+    tabs = dialog.query_one(TabbedContent)
+    tabs.active = tab_id
+    await wait_for(
+        lambda: tabs.active == tab_id and dialog.query_one(f"#{tab_id}").region.width > 0,
+        pilot=pilot,
+        description=f"the {tab_id} tab is shown",
+    )
+
+
+async def test_dialog_commits_a_rename_through_the_settings_tab(tmp_path) -> None:
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-settings")
+
+        dialog.query_one("#buddy-config-name", Input).value = "Mochi"
+        await click_when_settled(pilot, "#buddy-config-name-apply")
+        await wait_for(
+            lambda: ("rename", "Mochi") in ports.calls,
+            pilot=pilot,
+            description="applying the name in the dialog renames the buddy",
+        )
+
+
+async def test_dialog_toggles_mute_through_the_settings_tab(tmp_path) -> None:
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-settings")
+
+        switch = dialog.query_one("#buddy-config-muted", Switch)
+        muted = not switch.value
+        switch.value = muted
+        await wait_for(
+            lambda: ("muted", muted) in ports.calls,
+            pilot=pilot,
+            description="toggling the switch in the dialog writes the muted flag",
+        )
+
+
+async def test_dialog_selects_a_reply_model_through_the_settings_tab(tmp_path) -> None:
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts(model_choices=[("", "Follow active"), ("m", "M")])
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-settings")
+
+        dialog.query_one("#buddy-config-model", Select).value = "m"
+        await wait_for(
+            lambda: ("model", "m") in ports.calls,
+            pilot=pilot,
+            description="picking a model in the dialog writes the reply model",
+        )
+
+
+async def test_dialog_imports_a_frame_through_the_picker_result(tmp_path) -> None:
+    from pathlib import Path
+
+    from chrys.app.tui.screens.dialogs.file_picker import FilePicker
+    from tests.support.tui_app_harness import make_chrys_app
+
+    target = tmp_path / "art.png"
+    target.write_bytes(b"\x89PNG\r\n\x1a\n")
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-appearance")
+
+        await click_when_settled(pilot, "#frame-import-2")
+        await wait_for(
+            lambda: isinstance(app.screen, FilePicker),
+            pilot=pilot,
+            description="the import button opens the frame artwork picker",
+        )
+        picker = app.screen
+        assert isinstance(picker, FilePicker)
+
+        # Choose a path, then take the picker's own Select path so its dismissal
+        # result flows back through the dialog's on_result callback.
+        picker._selected_path = str(target)
+        picker._update_select_button()
+        await click_when_settled(pilot, "#fsd-select")
+
+        await wait_for(
+            lambda: ("import", (2, Path(target))) in ports.calls,
+            pilot=pilot,
+            description="the picker result imports the chosen path into the frame",
+        )
+
+
+async def test_dialog_removes_a_frame_through_the_appearance_tab(tmp_path) -> None:
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-appearance")
+
+        await click_when_settled(pilot, "#frame-remove-3")
+        await wait_for(
+            lambda: ("remove", 3) in ports.calls,
+            pilot=pilot,
+            description="removing a frame in the dialog drops its custom artwork",
+        )
