@@ -149,3 +149,37 @@ def test_model_choices_relabels_the_empty_value() -> None:
     pane = SettingsPane(ports, locale_controller=None)
 
     assert pane._model_choices() == [("Follow the active model", ""), ("M", "m")]
+
+
+async def test_appearance_import_uses_the_picker_result() -> None:
+    from pathlib import Path
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+    pane = AppearancePane(ports, locale_controller=None)
+
+    await pane.import_into(2, Path("/tmp/art.png"))
+
+    assert ("import", (2, Path("/tmp/art.png"))) in ports.calls
+
+
+async def test_appearance_remove() -> None:
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    ports = StubPorts()
+    ports.custom_frames = {4}
+    pane = AppearancePane(ports, locale_controller=None)
+
+    await pane.remove(4)
+
+    assert ("remove", 4) in ports.calls
+
+
+def test_appearance_lists_six_frames() -> None:
+    from chrys.app.features.buddy.animation import FRAME_COUNT
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+
+    assert FRAME_COUNT == 6
+    pane = AppearancePane(StubPorts(), locale_controller=None)
+    assert len(pane.frame_rows()) == 6
