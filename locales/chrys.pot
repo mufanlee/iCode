@@ -4209,6 +4209,12 @@ msgstr ""
 msgid "tui.buddy.save_failed"
 msgstr ""
 
+#. English: Configure your buddy
+#. chrys-meta={"fingerprint":"3cfaf58a88df8467604ccd0eec05f6ef54aad9e4a77034a7fb4dd5da33766fbb","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_command.py
+msgid "tui.buddy.subcommand.config"
+msgstr ""
+
 #. English: Hatch a new buddy
 #. chrys-meta={"fingerprint":"84c569b5b152a20cc55bf1421ecf928d79ca8e1ccbdc2cdff27fef7dc0e87258","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/buddy_command.py
@@ -4274,6 +4280,166 @@ msgstr ""
 #. chrys-meta={"fingerprint":"2cf1e93e014b5d6be3b55d6ab85b99ae7aaecc694ab5c7b4fa06f67d4cd84bff","multiline":true,"placeholders":["arg"]}
 #: src/chrys/app/features/buddy/commands.py
 msgid "tui.buddy.unknown"
+msgstr ""
+
+#. English: Apply
+#. chrys-meta={"fingerprint":"eb7af8624ec4baf0730a84f5472a6b51f6256ea7b4fed1a5cb29a7956abb664c","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.action.apply"
+msgstr ""
+
+#. English: Close
+#. chrys-meta={"fingerprint":"b539b71b98c3530fcd17b6257d0bcdd95ec41dbd6ba78a0b8ad40de8ddc5103e","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.action.close"
+msgstr ""
+
+#. English: Import
+#. chrys-meta={"fingerprint":"1e974c8a0fc93af4325ba12ec3143785d96e73d9b34f087a10937a3eed3f5d48","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.import"
+msgstr ""
+
+#. English: Open folder
+#. chrys-meta={"fingerprint":"c1ed71e74a8fee72d035f7f727db12cc77290c91452ddd09e24eb6f9397e97bd","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.open_folder"
+msgstr ""
+
+#. English: Re-hatch
+#. chrys-meta={"fingerprint":"c69646750330de996ffedd9f70643c557de86023199827c545b6f9277d97b4d8","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.action.rehatch"
+msgstr ""
+
+#. English: Remove
+#. chrys-meta={"fingerprint":"5ab83d83e77d1fd96ebcc0b0ecc9ce26afa1a54d844f2763f4d3e8f8a8903075","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.remove"
+msgstr ""
+
+#. English: Files are <species>_<frame>.png; leaving one out uses the built-in
+#. art for that frame.
+#. chrys-meta={"fingerprint":"9c05d3a7472a840aca6ad3ac9c50e03248cd4b25c1e16aed0d647c110daa8637","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.hint"
+msgstr ""
+
+#. English: Select frame artwork
+#. chrys-meta={"fingerprint":"8ac8e871c1054b225ad535aacd477e5087154131036e2b64a421fcf0839ee9da","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.picker.title"
+msgstr ""
+
+#. English: Built-in
+#. chrys-meta={"fingerprint":"33a7ee1778e089e2f37f6c99829a838bb2c635dd8dd30240530b59503dad2c53","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.state.builtin"
+msgstr ""
+
+#. English: Custom
+#. chrys-meta={"fingerprint":"740289892645f7695e159658ae8703cc871efb15fe7248b5137e0e2ead9297f0","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.state.custom"
+msgstr ""
+
+#. English: Nothing has hatched yet.  /buddy hatch finds out what is in the
+#. egg.
+#. chrys-meta={"fingerprint":"e7cb44c007cf6884e1014c51489542610b6f2e7a6af4c5b6e5d4a14d788a23a7","multiline":true,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/profile.py
+msgid "tui.buddy_config.empty.hint"
+msgstr ""
+
+#. English: Muted
+#. chrys-meta={"fingerprint":"3a2bdb64c123eef4546342112fef5fe8ddceb2fa214b34727865e0ee56bb2a8a","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.muted"
+msgstr ""
+
+#. English: Name
+#. chrys-meta={"fingerprint":"4cb17b0cbe6b5b3b3f48eebe53381b8dff2453283d21d5ccbd53233b9dda31f6","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.name"
+msgstr ""
+
+#. English: Reply model
+#. chrys-meta={"fingerprint":"a7f9276693e6c7fec4d297daf50bff992fd181dffb32770316b747a9c30aceb4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.reply_model"
+msgstr ""
+
+#. English: Opening the buddy assets folder is not available in the current
+#. environment.
+#. chrys-meta={"fingerprint":"80e06c5c82f681b6d4b62bccd555537cff085460c81cc10230bfbb7b56cb6fd7","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/screen.py
+msgid "tui.buddy_config.open_assets.unavailable"
+msgstr ""
+
+#. English: Re-hatch replaces your buddy with a fresh random draw. Its species,
+#. rarity, traits and progress cannot be recovered.
+#. chrys-meta={"fingerprint":"539c2b73b11bf3afb8e0ca18510df81131bf95b9873dcc303847998f43c1f72e","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.rehatch.confirm"
+msgstr ""
+
+#. English: Follow the active model
+#. chrys-meta={"fingerprint":"1777275085f3e51b4387c9ed60bdca4c6a93059198d9097d85ad22ad23042056","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.reply_model.follow"
+msgstr ""
+
+#. English: Changes are saved as you make them
+#. chrys-meta={"fingerprint":"51d79d4fb0b587f91eb9bbae27b0b823c1b91ea7aff3275a12f9515eafe41090","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.status.autosave"
+msgstr ""
+
+#. English: Appearance
+#. chrys-meta={"fingerprint":"f27f06141e84ba97371cbfa818b90267fdf44d812a0dcca5c3bed034eccf4d8a","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.appearance"
+msgstr ""
+
+#. English: Profile
+#. chrys-meta={"fingerprint":"1f32e5bec5d54398a6c913fbd43a7560087c02343db62f7787dcff3926ae39c4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.profile"
+msgstr ""
+
+#. English: Settings
+#. chrys-meta={"fingerprint":"794bd89198036b3c90e32bf50e53ce88b6a35addcd9b6f537e1d1fb9a161d83e","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.settings"
+msgstr ""
+
+#. English: Buddy
+#. chrys-meta={"fingerprint":"b24977515f388242f6162756260851ee0929d9063bb635c662fc21f76399f966","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.title"
+msgstr ""
+
+#. English: Buddy artwork could not be installed
+#. chrys-meta={"fingerprint":"73a81f273a86ef701c631554933ff1ee53d93ac53f26254f3f4b143f6e32d56c","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.install_failed"
+msgstr ""
+
+#. English: A name has to be at least one visible character.
+#. chrys-meta={"fingerprint":"9a4d0df4a626e6ea297e8c98cc4faf2cea8ae1b39693205548cf6c1ab35c507d","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.toast.name_empty"
+msgstr ""
+
+#. English: Buddy artwork could not be removed
+#. chrys-meta={"fingerprint":"97effe7b9d6ee647539e2c3857af671afb37907363db743f450741d650f8feee","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.remove_failed"
+msgstr ""
+
+#. English: Buddy save file could not be updated
+#. chrys-meta={"fingerprint":"c74fabfd7388909c9b1d8ec2d7e60446a99b9d67fea46605091076e4b264eea7","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.save_failed"
 msgstr ""
 
 #. English: Agent
@@ -9688,6 +9854,12 @@ msgstr ""
 #. chrys-meta={"fingerprint":"6a22a07c91607b4cef9061c6cf44da0b0ca5c3297d0da64e662bd6383e984dec","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/widgets/sidebar/buddy.py
 msgid "tui.sidebar.buddy.click_to_pet"
+msgstr ""
+
+#. English: Configure
+#. chrys-meta={"fingerprint":"8795f73c2b355641c5fdc66bf3e7dce65fb638ff128a11d37c43cddd0a6715fc","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/widgets/sidebar/buddy.py
+msgid "tui.sidebar.buddy.configure"
 msgstr ""
 
 #. English: No buddy hatched yet. Try /buddy hatch
