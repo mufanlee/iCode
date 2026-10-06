@@ -4406,6 +4406,24 @@ msgstr ""
 msgid "tui.buddy_config.reply_model.follow"
 msgstr ""
 
+#. English: Behaviour
+#. chrys-meta={"fingerprint":"908bd18c181d68f03346c225df4559a8d69b83e99e837cb56bb24d6b693079a4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.section.behaviour"
+msgstr ""
+
+#. English: Frames
+#. chrys-meta={"fingerprint":"0bdc2f448b68ed7de983de059cdc584ce24c28e96d1c9e69c90bbd5f14e88b3f","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.section.frames"
+msgstr ""
+
+#. English: Identity
+#. chrys-meta={"fingerprint":"5c26ad176c4a211dd971424966101b8fac042a919cedf0d82712b5ca1bbd9db3","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.section.identity"
+msgstr ""
+
 #. English: Changes are saved as you make them
 #. chrys-meta={"fingerprint":"51d79d4fb0b587f91eb9bbae27b0b823c1b91ea7aff3275a12f9515eafe41090","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/dialog.py
