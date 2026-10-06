@@ -5,8 +5,8 @@ BuddyConfigDialog {
 
 /* Same breathing room as the Settings dialog: a near-full-width box with the
    height capped so a taller terminal only grows the margins. The border, its
-   title and its subtitle live here, as on the other dialogs, and the button
-   row docks inside this box so the frame encloses it. */
+   title and its subtitle live here, as on the other dialogs; it holds only the
+   tabbed content (the dialog is dismissed with Esc or a click outside). */
 #buddy-config-container {
     width: 92%;
     max-width: 92;
