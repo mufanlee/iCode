@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Self
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Button, Static
@@ -47,11 +48,20 @@ class ProfilePane(Widget):
 
     DEFAULT_CSS = """
     ProfilePane { height: 1fr; }
+    /* Each element gets its own full-width row so it is centred on its OWN width:
+       a vertical container's align centres the widest child's column and
+       left-aligns narrower siblings, so the 24-wide portrait would otherwise
+       sit at the 66-wide fact sheet's left edge. A single-child row defines the
+       column itself, so that child lands truly centred. */
+    ProfilePane Horizontal { width: 1fr; height: auto; align: center top; }
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = PIXEL_WIDTH + 4 = 24,
        PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
        place instead of re-laying out (a bare width or height:auto would). */
     ProfilePane #buddy-config-portrait { width: 24; height: 11; }
-    ProfilePane #buddy-config-facts { height: auto; }
+    /* auto width (not full-bleed) so the fact sheet and the hint read as a centered
+       block rather than hugging the left edge; the block keeps its internal alignment. */
+    ProfilePane #buddy-config-facts { width: auto; height: auto; }
+    ProfilePane #buddy-config-hatch { width: auto; }
     """
 
     class Hatched(Message):
@@ -65,9 +75,14 @@ class ProfilePane(Widget):
         self._portrait: _BuddyPortrait | None = None
 
     def compose(self) -> ComposeResult:
-        yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
-        yield Static("", id="buddy-config-facts")
-        yield Button(Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch", variant="primary", flat=True)
+        with Horizontal(id="buddy-config-portrait-row"):
+            yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
+        with Horizontal(id="buddy-config-facts-row"):
+            yield Static("", id="buddy-config-facts")
+        with Horizontal(id="buddy-config-hatch-row"):
+            yield Button(
+                Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch", variant="primary", flat=True
+            )
 
     def render_body(self) -> str:
         """The pane's plain-text body."""

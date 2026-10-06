@@ -309,6 +309,69 @@ async def test_dialog_frames_the_tabs_and_buttons_in_one_centered_container(tmp_
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
 
 
+async def test_profile_content_is_horizontally_centered(tmp_path) -> None:
+    """Each Profile element is centred on its own width, not aligned to its widest sibling.
+
+    A vertical container's align centres the widest child's column and left-aligns
+    narrower siblings, so the 24-wide portrait used to sit at the 66-wide fact
+    sheet's left edge. Giving each element its own single-child row fixes that.
+    """
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+        await pilot.pause()
+
+        pane = dialog.query_one(ProfilePane)
+        portrait = dialog.query_one("#buddy-config-portrait", Static)
+        facts = dialog.query_one("#buddy-config-facts", Static)
+
+        pane_center = pane.content_region.x + pane.content_region.width // 2
+        assert abs((portrait.region.x + portrait.region.width // 2) - pane_center) <= 1
+        assert abs((facts.region.x + facts.region.width // 2) - pane_center) <= 1
+        # The narrower portrait now sits centred OVER the wider facts block rather
+        # than pinned to its left edge — exactly what was broken.
+        assert portrait.region.x > facts.region.x
+
+        await pilot.press("escape")
+        await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
+
+
+async def test_profile_empty_state_hatch_is_horizontally_centered(tmp_path) -> None:
+    from textual.widgets import Button
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts(_buddy=None)
+
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+        await pilot.pause()
+
+        pane = dialog.query_one(ProfilePane)
+        hatch = dialog.query_one("#buddy-config-hatch", Button)
+        assert hatch.display
+
+        pane_center = pane.content_region.x + pane.content_region.width // 2
+        assert abs((hatch.region.x + hatch.region.width // 2) - pane_center) <= 1
+
+
 async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> None:
     from textual.widgets import Button, TabbedContent
 
