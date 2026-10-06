@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Self
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import Horizontal, VerticalGroup, VerticalScroll
 from textual.events import Click
 from textual.widget import Widget
 from textual.widgets import Button, Static
@@ -36,11 +36,14 @@ _HINT = msg(
 )
 _STATE_BUILTIN = msg("tui.buddy_config.appearance.state.builtin", fallback="Built-in")
 _STATE_CUSTOM = msg("tui.buddy_config.appearance.state.custom", fallback="Custom")
-_PREVIEW_LABEL = msg("tui.buddy_config.appearance.preview", fallback="Preview")
+_PREVIEW_TITLE = msg("tui.buddy_config.appearance.preview", fallback="Preview")
+_FRAMES_TITLE = msg("tui.buddy_config.section.frames", fallback="Frames")
 _IMPORT = msg("tui.buddy_config.action.import", fallback="Import")
 _REMOVE = msg("tui.buddy_config.action.remove", fallback="Remove")
 _OPEN = msg("tui.buddy_config.action.open_folder", fallback="Open folder")
 _PICKER_TITLE = msg("tui.buddy_config.appearance.picker.title", fallback="Select frame artwork")
+
+_SECTIONS = (_PREVIEW_TITLE, _FRAMES_TITLE)
 
 _ROW_PREFIX = "frame-row-"
 _IMPORT_PREFIX = "frame-import-"
@@ -49,7 +52,6 @@ _OPEN_FOLDER_ID = "buddy-config-open-folder"
 _HINT_ID = "buddy-config-appearance-hint"
 _PREVIEW_ID = "buddy-config-frame-preview"
 _PREVIEW_ROW_ID = "buddy-config-frame-preview-row"
-_PREVIEW_LABEL_ID = "buddy-config-frame-preview-label"
 
 
 @dataclass(frozen=True)
@@ -148,36 +150,39 @@ class AppearancePane(VerticalScroll):
         return [FrameRow(frame, self._ports.frame_state(frame)) for frame in range(FRAME_COUNT)]
 
     def compose(self) -> ComposeResult:
-        yield Static(
-            Text(self._render_message(_PREVIEW_LABEL.bind())),
-            id=_PREVIEW_LABEL_ID,
-        )
-        with Horizontal(id=_PREVIEW_ROW_ID):
-            yield _FramePreview(self._ports, id=_PREVIEW_ID)
-        for row in self.frame_rows():
-            with Horizontal(classes="frame-row", id=f"{_ROW_PREFIX}{row.frame}"):
-                yield Static(
-                    Text(f"{row.frame}: {self._state_label(row.state)}"),
-                    id=f"frame-state-{row.frame}",
-                )
+        with VerticalGroup(classes="buddy-config-section") as preview:
+            preview.border_title = Text(self._render_message(_PREVIEW_TITLE.bind()))
+            with Horizontal(id=_PREVIEW_ROW_ID):
+                yield _FramePreview(self._ports, id=_PREVIEW_ID)
+        with VerticalGroup(classes="buddy-config-section") as frames:
+            frames.border_title = Text(self._render_message(_FRAMES_TITLE.bind()))
+            for row in self.frame_rows():
+                with Horizontal(classes="buddy-config-row frame-row", id=f"{_ROW_PREFIX}{row.frame}"):
+                    yield Static(
+                        Text(f"{row.frame}: {self._state_label(row.state)}"),
+                        id=f"frame-state-{row.frame}",
+                    )
+                    yield Button(
+                        Text(self._render_message(_IMPORT.bind())),
+                        id=f"{_IMPORT_PREFIX}{row.frame}",
+                        classes="buddy-config-link",
+                    )
+                    yield Button(
+                        Text(self._render_message(_REMOVE.bind())),
+                        id=f"{_REMOVE_PREFIX}{row.frame}",
+                        classes="buddy-config-link -danger",
+                    )
+            with Horizontal(classes="buddy-config-row"):
                 yield Button(
-                    Text(self._render_message(_IMPORT.bind())),
-                    id=f"{_IMPORT_PREFIX}{row.frame}",
-                    variant="primary",
-                    flat=True,
+                    Text(self._render_message(_OPEN.bind())),
+                    id=_OPEN_FOLDER_ID,
+                    classes="buddy-config-link",
                 )
-                yield Button(
-                    Text(self._render_message(_REMOVE.bind())),
-                    id=f"{_REMOVE_PREFIX}{row.frame}",
-                    variant="error",
-                    flat=True,
-                )
-        yield Button(Text(self._render_message(_OPEN.bind())), id=_OPEN_FOLDER_ID, variant="primary", flat=True)
-        yield Static(
-            Text(self._render_message(_HINT.bind())),
-            id=_HINT_ID,
-            classes="frame-row",
-        )
+            yield Static(
+                Text(self._render_message(_HINT.bind())),
+                id=_HINT_ID,
+                classes="buddy-config-row-hint",
+            )
 
     def on_mount(self) -> None:
         self._apply_selection()
@@ -199,16 +204,18 @@ class AppearancePane(VerticalScroll):
             self._refresh_frame_state(frame)
 
     def refresh_localization(self) -> None:
-        """Re-render the preview label, the per-frame state labels, buttons and the hint."""
+        """Re-render the section titles, the per-frame state labels, buttons and the hint."""
         if not self.is_mounted:
             return
+        sections = self.query(".buddy-config-section")
+        for group, definition in zip(sections, _SECTIONS, strict=True):
+            group.border_title = Text(self._render_message(definition.bind()))
         for frame in range(FRAME_COUNT):
             self._refresh_frame_state(frame)
             self.query_one(f"#{_IMPORT_PREFIX}{frame}", Button).label = Text(self._render_message(_IMPORT.bind()))
             self.query_one(f"#{_REMOVE_PREFIX}{frame}", Button).label = Text(self._render_message(_REMOVE.bind()))
         self.query_one(f"#{_OPEN_FOLDER_ID}", Button).label = Text(self._render_message(_OPEN.bind()))
         self.query_one(f"#{_HINT_ID}", Static).update(Text(self._render_message(_HINT.bind())))
-        self.query_one(f"#{_PREVIEW_LABEL_ID}", Static).update(Text(self._render_message(_PREVIEW_LABEL.bind())))
 
     def select_frame(self, frame: int) -> None:
         """Preview *frame* and mark its row as selected."""

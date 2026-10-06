@@ -47,7 +47,7 @@ class ProfilePane(Widget):
     """Read-only buddy facts, plus a portrait that animates while shown."""
 
     DEFAULT_CSS = """
-    ProfilePane { height: 1fr; }
+    ProfilePane { width: 1fr; height: auto; }
     /* Each element gets its own full-width row so it is centred on its OWN width:
        a vertical container's align centres the widest child's column and
        left-aligns narrower siblings, so the 24-wide portrait would otherwise
@@ -81,7 +81,9 @@ class ProfilePane(Widget):
             yield Static("", id="buddy-config-facts")
         with Horizontal(id="buddy-config-hatch-row"):
             yield Button(
-                Text(self._render_message(_HATCH.bind())), id="buddy-config-hatch", variant="primary", flat=True
+                Text(self._render_message(_HATCH.bind())),
+                id="buddy-config-hatch",
+                classes="buddy-config-link",
             )
 
     def render_body(self) -> str:

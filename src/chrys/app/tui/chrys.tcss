@@ -264,6 +264,7 @@ App Tabs:focus .underline--bar {
 
 App ModalScreen > #container,
 App ModalScreen > #settings-container,
+App ModalScreen > #buddy-config-container,
 App ModalScreen #confirm-inner {
     background: $surface;
 }
@@ -274,6 +275,7 @@ App:ansi ModalScreen {
 
 App:ansi ModalScreen > #container,
 App:ansi ModalScreen > #settings-container,
+App:ansi ModalScreen > #buddy-config-container,
 App:ansi ModalScreen #confirm-inner {
     background: transparent;
 }

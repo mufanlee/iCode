@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, ClassVar
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import VerticalGroup
+from textual.containers import VerticalGroup, VerticalScroll
 from textual.content import Content
 from textual.widgets import Button, TabbedContent, TabPane
 
@@ -24,6 +24,8 @@ from chrys.foundation.i18n import MessageDef, MessageRef, msg
 from chrys.foundation.i18n.formatting import format_message
 
 if TYPE_CHECKING:
+    from textual.widget import Widget
+
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.screens.buddy_config.ports import BuddyConfigPorts
 
@@ -81,12 +83,12 @@ class BuddyConfigDialog(BaseDialog[None]):
             container.border_subtitle = Text(self._render_message(_STATUS.bind()))
             with TabbedContent(initial=PROFILE_TAB_ID, id="buddy-config-tabs"):
                 with TabPane(self._tab_label(_TAB_PROFILE.bind()), id=PROFILE_TAB_ID):
-                    yield ProfilePane(self._ports, locale_controller=self._locale_controller)
+                    yield self._pane_body(ProfilePane(self._ports, locale_controller=self._locale_controller))
                 if has_buddy:
                     with TabPane(self._tab_label(_TAB_APPEARANCE.bind()), id=APPEARANCE_TAB_ID):
-                        yield AppearancePane(self._ports, locale_controller=self._locale_controller)
+                        yield self._pane_body(AppearancePane(self._ports, locale_controller=self._locale_controller))
                     with TabPane(self._tab_label(_TAB_SETTINGS.bind()), id=SETTINGS_TAB_ID):
-                        yield SettingsPane(self._ports, locale_controller=self._locale_controller)
+                        yield self._pane_body(SettingsPane(self._ports, locale_controller=self._locale_controller))
             yield DialogButtonRow(
                 DialogButtonSpec(
                     Text(self._render_message(_REHATCH.bind())),
@@ -174,14 +176,14 @@ class BuddyConfigDialog(BaseDialog[None]):
         await tabs.add_pane(
             TabPane(
                 self._tab_label(_TAB_APPEARANCE.bind()),
-                AppearancePane(self._ports, locale_controller=self._locale_controller),
+                self._pane_body(AppearancePane(self._ports, locale_controller=self._locale_controller)),
                 id=APPEARANCE_TAB_ID,
             )
         )
         await tabs.add_pane(
             TabPane(
                 self._tab_label(_TAB_SETTINGS.bind()),
-                SettingsPane(self._ports, locale_controller=self._locale_controller),
+                self._pane_body(SettingsPane(self._ports, locale_controller=self._locale_controller)),
                 id=SETTINGS_TAB_ID,
             )
         )
@@ -196,6 +198,11 @@ class BuddyConfigDialog(BaseDialog[None]):
         for pane_type in _PANE_TYPES:
             panes.extend(self.query(pane_type))
         return panes
+
+    @staticmethod
+    def _pane_body(pane: Widget) -> VerticalScroll:
+        """The scroll wrapper each tab's body sits in, as on the Settings dialog."""
+        return VerticalScroll(pane, classes="buddy-config-pane-scroll")
 
     def _tab_label(self, reference: MessageRef) -> Content:
         """A tab caption as literal content; a translated label is never markup."""

@@ -6,9 +6,10 @@ from __future__ import annotations
 
 from textual.app import App, ComposeResult
 from textual.containers import Container
-from textual.widgets import Input, Select, Switch
+from textual.widgets import Input, Select
 
 from chrys.app.tui.theme import TuiVariableDefaultsMixin
+from chrys.app.tui.widgets import Checkbox
 from tests.app.tui.screens.buddy_config.support import StubPorts
 from tests.support.tui_helpers import click_when_settled
 from tests.support.waiting import wait_for
@@ -78,11 +79,23 @@ async def test_settings_pane_rejects_an_empty_name() -> None:
 
 
 def _settings_pane_app(ports: StubPorts) -> App[None]:
+    from pathlib import Path
+
+    from textual.containers import VerticalGroup
+
+    import chrys.app.tui.screens.buddy_config.dialog as buddy_dialog
     from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 
+    # The row/control styling lives in the dialog stylesheet, scoped to the
+    # container, so mount the pane the way the dialog does.
+    css_path = Path(buddy_dialog.__file__).with_name("dialog.tcss")
+
     class SettingsPaneApp(TuiVariableDefaultsMixin, App[None]):
+        CSS_PATH = str(css_path)
+
         def compose(self) -> ComposeResult:
-            yield SettingsPane(ports, locale_controller=None)
+            with VerticalGroup(id="buddy-config-container"):
+                yield SettingsPane(ports, locale_controller=None)
 
     return SettingsPaneApp()
 
@@ -108,13 +121,13 @@ async def test_settings_pane_wires_controls_without_writing_on_mount() -> None:
             description="applying the name renames the buddy",
         )
 
-        switch = pilot.app.query_one("#buddy-config-muted", Switch)
-        muted = not switch.value
-        switch.value = muted
+        checkbox = pilot.app.query_one("#buddy-config-muted", Checkbox)
+        muted = not checkbox.value
+        checkbox.value = muted
         await wait_for(
             lambda: ("muted", muted) in ports.calls,
             pilot=pilot,
-            description="toggling the switch writes the muted flag",
+            description="toggling the checkbox writes the muted flag",
         )
 
         pilot.app.query_one("#buddy-config-model", Select).value = "m"
@@ -562,7 +575,7 @@ async def test_dialog_refreshes_the_panes_after_a_rehatch(tmp_path) -> None:
         )
 
         name_input = dialog.query_one("#buddy-config-name", Input)
-        muted = dialog.query_one("#buddy-config-muted", Switch)
+        muted = dialog.query_one("#buddy-config-muted", Checkbox)
         await wait_for(
             lambda: (
                 new_name in str(facts.content)
@@ -719,13 +732,13 @@ async def test_dialog_toggles_mute_through_the_settings_tab(tmp_path) -> None:
         dialog = await _open_mounted_dialog(pilot, app, ports)
         await _show_tab(pilot, dialog, "buddy-config-tab-settings")
 
-        switch = dialog.query_one("#buddy-config-muted", Switch)
-        muted = not switch.value
-        switch.value = muted
+        checkbox = dialog.query_one("#buddy-config-muted", Checkbox)
+        muted = not checkbox.value
+        checkbox.value = muted
         await wait_for(
             lambda: ("muted", muted) in ports.calls,
             pilot=pilot,
-            description="toggling the switch in the dialog writes the muted flag",
+            description="toggling the checkbox in the dialog writes the muted flag",
         )
 
 
@@ -1017,3 +1030,57 @@ async def test_appearance_preview_is_horizontally_centered(tmp_path) -> None:
         # The narrower preview now sits centred INSIDE the pane rather than at
         # its left edge — exactly what was broken.
         assert preview.region.x > pane.content_region.x
+
+
+async def test_settings_tab_renders_sections_and_rows(tmp_path) -> None:
+    """The Settings tab mirrors the Settings dialog: bordered sections of rows."""
+    from textual.widgets import Label
+
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-settings")
+        await pilot.pause()
+
+        pane = dialog.query_one(SettingsPane)
+        sections = list(pane.query(".buddy-config-section"))
+        assert len(sections) == 2
+        assert {str(section.border_title) for section in sections} == {"Identity", "Behaviour"}
+
+        # Rows sit inside the sections, each a main row of label + control.
+        rows = list(pane.query(".buddy-config-row-main"))
+        assert len(rows) == 3
+        assert dialog.query_one("#buddy-config-name-label", Label)
+        assert dialog.query_one("#buddy-config-model-label", Label)
+
+        # The Muted control is a Checkbox carrying its own label, not a Switch.
+        muted = dialog.query_one("#buddy-config-muted", Checkbox)
+        assert muted.label.plain == "Muted"
+
+
+async def test_buddy_container_matches_the_settings_size(tmp_path) -> None:
+    """The dialog box grows like the Settings one instead of a fixed 84x32."""
+    from textual.containers import VerticalGroup
+
+    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(200, 60)) as pilot:
+        await pilot.pause()
+        dialog = BuddyConfigDialog(ports, locale_controller=None)
+        app.push_screen(dialog)
+        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
+
+        container = dialog.query_one("#buddy-config-container", VerticalGroup)
+        # 92% of 200 caps at 92 wide; 85% of 60 caps at 48 tall.
+        assert container.region.width == 92
+        assert container.region.height == 48
