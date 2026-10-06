@@ -122,6 +122,7 @@ def test_completion_labels_localize_without_changing_values() -> None:
         ("pet", "抚摸你的伙伴"),
         ("mute", "切换伙伴通知"),
         ("name", "重命名伙伴"),
+        ("config", "配置你的伙伴"),
     ]
 
 
