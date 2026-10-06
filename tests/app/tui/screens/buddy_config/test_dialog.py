@@ -283,7 +283,7 @@ async def test_dialog_opens_on_the_profile_tab(tmp_path) -> None:
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
 
 
-async def test_dialog_frames_the_tabs_and_buttons_in_one_centered_container(tmp_path) -> None:
+async def test_dialog_frames_the_tabs_in_one_centered_container(tmp_path) -> None:
     """The dialog is one centred, bordered box holding the tabs and the buttons."""
     from textual.containers import VerticalGroup
     from textual.widgets import TabbedContent

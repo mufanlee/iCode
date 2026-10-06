@@ -46,7 +46,6 @@ BUDDY_MESSAGE_IDS = frozenset(
         "tui.buddy.title",
         "tui.buddy.unknown",
         "tui.buddy_config.action.apply",
-        "tui.buddy_config.action.close",
         "tui.buddy_config.action.hatch",
         "tui.buddy_config.action.import",
         "tui.buddy_config.action.open_folder",

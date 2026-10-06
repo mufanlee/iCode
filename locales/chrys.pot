@@ -4294,12 +4294,6 @@ msgstr ""
 msgid "tui.buddy_config.action.apply"
 msgstr ""
 
-#. English: Close
-#. chrys-meta={"fingerprint":"b539b71b98c3530fcd17b6257d0bcdd95ec41dbd6ba78a0b8ad40de8ddc5103e","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/screens/buddy_config/dialog.py
-msgid "tui.buddy_config.action.close"
-msgstr ""
-
 #. English: Hatch
 #. chrys-meta={"fingerprint":"70e6ae443af11e40a421e70bfdfb15615133eeb995a6001a31dd224ebdf7af87","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/profile.py
