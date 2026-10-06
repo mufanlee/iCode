@@ -6452,8 +6452,9 @@ msgstr "使用 Tab 补全可直接切换到指定模式。"
 #. hatch   - Hatch your buddy (there is only ever one)         info    - Show
 #. how your buddy is doing         pet     - Pet your buddy and hear what it
 #. says         mute    - Keep your buddy quiet, or let it speak again
-#. name    - Give your buddy a new name
-#. chrys-meta={"fingerprint":"cbf50a2d854deff68272ffbbdf15e60b751ca65dbdfa2edd0a7e70274f946bb3","multiline":true,"placeholders":[]}
+#. name    - Give your buddy a new name         config  - Open the buddy
+#. configuration dialog
+#. chrys-meta={"fingerprint":"df283c90d0cf6e42ce9bb939794b4c155f641a6301c10496285d71a2d500d21e","multiline":true,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/commands.py
 msgid "tui.man.buddy.body"
 msgstr ""
@@ -6464,7 +6465,8 @@ msgstr ""
 "        info    - 查看伙伴的近况\n"
 "        pet     - 摸摸伙伴，听听它说什么\n"
 "        mute    - 让伙伴保持安静，或让它重新开口\n"
-"        name    - 给伙伴起个新名字"
+"        name    - 给伙伴起个新名字\n"
+"        config  - 打开伙伴配置对话框"
 
 #. English: Change the current working directory for the {app} session.
 #. Subsequent file operations and AI context will use the new directory as the

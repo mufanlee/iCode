@@ -74,9 +74,11 @@ failures into toasts.
 ### Entry points
 
 - `/buddy config`: a new `_SUBCOMMAND_CONFIG` in `screens/main/buddy_command.py`
-  that pushes the dialog instead of going through `handle_buddy_command`. Always
-  available; the dialog shows its empty (egg) state when no buddy exists. The
-  existing subcommand hint list still leads with `hatch` when there is no buddy.
+  that opens the dialog instead of going through `handle_buddy_command`. Always
+  routable; with no buddy the dialog shows its empty (egg) state. The subcommand
+  hint list offers only `hatch` until a buddy exists (there is nothing to
+  configure before then, and the empty state carries its own hatch button);
+  `config` joins the list once one has hatched.
 - Footer: a **Buddy** binding (F7) on the footer key row, alongside the
   Sessions/Agents/Models/Logs bindings. `MainScreen` declares it as a
   `localized_binding("f7", "buddy_config", _BUDDY_CONFIG_BINDING)`, whose

@@ -6388,8 +6388,9 @@ msgstr ""
 #. hatch   - Hatch your buddy (there is only ever one)         info    - Show
 #. how your buddy is doing         pet     - Pet your buddy and hear what it
 #. says         mute    - Keep your buddy quiet, or let it speak again
-#. name    - Give your buddy a new name
-#. chrys-meta={"fingerprint":"cbf50a2d854deff68272ffbbdf15e60b751ca65dbdfa2edd0a7e70274f946bb3","multiline":true,"placeholders":[]}
+#. name    - Give your buddy a new name         config  - Open the buddy
+#. configuration dialog
+#. chrys-meta={"fingerprint":"df283c90d0cf6e42ce9bb939794b4c155f641a6301c10496285d71a2d500d21e","multiline":true,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/commands.py
 msgid "tui.man.buddy.body"
 msgstr ""
