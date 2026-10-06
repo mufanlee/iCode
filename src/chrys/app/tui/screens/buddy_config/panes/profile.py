@@ -47,7 +47,7 @@ class ProfilePane(Widget):
     """Read-only buddy facts, plus a portrait that animates while shown."""
 
     DEFAULT_CSS = """
-    ProfilePane { width: 1fr; height: auto; }
+    ProfilePane { width: 1fr; height: 1fr; align-vertical: middle; }
     /* Each element gets its own full-width row so it is centred on its OWN width:
        a vertical container's align centres the widest child's column and
        left-aligns narrower siblings, so the 24-wide portrait would otherwise

@@ -355,6 +355,12 @@ async def test_profile_content_is_horizontally_centered(tmp_path) -> None:
         # The narrower portrait now sits centred OVER the wider facts block rather
         # than pinned to its left edge — exactly what was broken.
         assert portrait.region.x > facts.region.x
+        # The block is centred VERTICALLY too: equal slack above the portrait and
+        # below the facts.
+        top_gap = portrait.region.y - pane.content_region.y
+        bottom_gap = pane.content_region.bottom - facts.region.bottom
+        assert top_gap > 0
+        assert abs(top_gap - bottom_gap) <= 1
 
         await pilot.press("escape")
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
