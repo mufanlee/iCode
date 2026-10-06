@@ -54,9 +54,10 @@ class ProfilePane(Widget):
        sit at the 66-wide fact sheet's left edge. A single-child row defines the
        column itself, so that child lands truly centred. */
     ProfilePane Horizontal { width: 1fr; height: auto; align: center top; }
-    /* A blank line between the portrait (with its nameplate) and the fact sheet,
-       so the two blocks read as separate pieces rather than one dense stack. */
-    ProfilePane #buddy-config-portrait-row { margin: 0 0 1 0; }
+    /* Breathing room between the portrait (with its nameplate) and the fact
+       sheet, so the two blocks read as separate pieces rather than one dense
+       stack. The same gap separates the empty state's egg from its hint. */
+    ProfilePane #buddy-config-portrait-row { margin: 0 0 2 0; }
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = PIXEL_WIDTH + 4 = 24,
        PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
        place instead of re-laying out (a bare width or height:auto would). */
@@ -64,6 +65,9 @@ class ProfilePane(Widget):
     /* auto width (not full-bleed) so the fact sheet and the hint read as a centered
        block rather than hugging the left edge; the block keeps its internal alignment. */
     ProfilePane #buddy-config-facts { width: auto; height: auto; }
+    /* The empty state's hatch button gets its own breathing room above, so the
+       call to action is not glued to the hint text. */
+    ProfilePane #buddy-config-hatch-row { margin: 1 0 0 0; }
     ProfilePane #buddy-config-hatch { width: auto; }
     """
 
