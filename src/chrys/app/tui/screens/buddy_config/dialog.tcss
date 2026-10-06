@@ -17,9 +17,6 @@ BuddyConfigDialog {
     border-title-style: bold;
     background: $surface;
     padding: 0;
-}
-
-#buddy-config-container {
     border-subtitle-color: $text-muted;
 }
 
@@ -51,6 +48,8 @@ BuddyConfigDialog {
    the title, rows sit one line apart, and the last row's margin keeps the
    bottom border off the content. Sections sit one line apart. */
 #buddy-config-container .buddy-config-section {
+    width: 100%;
+    height: auto;
     border: round $tui-border-foreground 15%;
     border-title-color: $secondary;
     border-title-style: bold;

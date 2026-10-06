@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from textual.app import App, ComposeResult
 from textual.containers import Container
-from textual.widgets import Input, Select
+from textual.widgets import Input, Select, Switch
 
 from chrys.app.tui.theme import TuiVariableDefaultsMixin
-from chrys.app.tui.widgets import Checkbox
+from chrys.app.tui.widgets import Checkbox, EnhancedInput
 from tests.app.tui.screens.buddy_config.support import StubPorts
 from tests.support.tui_helpers import click_when_settled
 from tests.support.waiting import wait_for
@@ -647,6 +647,8 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
     from textual.widgets import Button, Static
 
     from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
     from tests.support.tui_app_harness import make_chrys_app
 
     app = make_chrys_app(tmp_path)
@@ -660,8 +662,17 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
 
         close = dialog.query_one("#buddy-config-close", Button)
+        # The three section.* titles: Identity/Behaviour on Settings, Frames on
+        # Appearance (its first section is the Preview, keyed separately).
+        settings_sections = list(dialog.query_one(SettingsPane).query(".buddy-config-section"))
+        appearance_sections = list(dialog.query_one(AppearancePane).query(".buddy-config-section"))
+        identity, behaviour = settings_sections
+        _preview, frames = appearance_sections
+        titled_sections = (identity, behaviour, frames)
+
         assert dialog in controller.registered
         assert str(close.label) == "EN-MARK"
+        assert [str(section.border_title) for section in titled_sections] == ["EN-MARK"] * 3
 
         controller.localizer.marker = "ZH-MARK"
         dialog.refresh_localization()
@@ -673,6 +684,8 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         assert str(container.border_title) == "ZH-MARK"
         assert str(container.border_subtitle) == "ZH-MARK"
         assert str(dialog.query_one("#buddy-config-name-label", Static).content) == "ZH-MARK"
+        # The section.* titles re-set too, not only the chrome and the name label.
+        assert [str(section.border_title) for section in titled_sections] == ["ZH-MARK"] * 3
 
         await pilot.press("escape")
         await wait_for(lambda: app.screen is not dialog, pilot=pilot, description="dialog closed")
@@ -1001,6 +1014,58 @@ async def test_appearance_last_row_buttons_stay_reachable(tmp_path) -> None:
         )
 
 
+async def test_each_buddy_tab_has_one_scroll_container(tmp_path) -> None:
+    """A pane must not nest its own scroll inside the tab body's wrapper scroll."""
+    from textual.containers import VerticalScroll
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
+    from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+
+        # No pane scrolls itself: the tab body's wrapper is the single scroller.
+        for pane_type in (ProfilePane, SettingsPane, AppearancePane):
+            assert not isinstance(dialog.query_one(pane_type), VerticalScroll)
+
+        for tab_id in ("buddy-config-tab-profile", "buddy-config-tab-settings", "buddy-config-tab-appearance"):
+            scrollers = list(dialog.query_one(f"#{tab_id}").query(VerticalScroll))
+            assert len(scrollers) == 1
+            assert scrollers[0].has_class("buddy-config-pane-scroll")
+
+
+async def test_appearance_tab_renders_sections_and_frame_rows(tmp_path) -> None:
+    """The Appearance tab mirrors the Settings tab: bordered sections of rows."""
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(110, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-appearance")
+        await pilot.pause()
+
+        pane = dialog.query_one(AppearancePane)
+        sections = list(pane.query(".buddy-config-section"))
+        assert [str(section.border_title) for section in sections] == ["Preview", "Frames"]
+
+        preview, frames = sections
+        # The six frame rows live under the Frames section, one per frame.
+        assert [row.id for row in frames.query(".frame-row")] == [f"frame-row-{frame}" for frame in range(6)]
+        # The still portrait preview lives under the Preview section.
+        assert len(list(preview.query("#buddy-config-frame-preview"))) == 1
+        assert list(frames.query("#buddy-config-frame-preview")) == []
+
+
 async def test_appearance_preview_is_horizontally_centered(tmp_path) -> None:
     """The 24-wide preview is centred on the pane, not pinned to its left edge.
 
@@ -1056,7 +1121,23 @@ async def test_settings_tab_renders_sections_and_rows(tmp_path) -> None:
         # Rows sit inside the sections, each a main row of label + control.
         rows = list(pane.query(".buddy-config-row-main"))
         assert len(rows) == 3
-        assert dialog.query_one("#buddy-config-name-label", Label)
+
+        # The Name row is one main row holding the label, the EnhancedInput and
+        # the Apply link button — and no plain Input/Switch control survives.
+        name_label = dialog.query_one("#buddy-config-name-label", Label)
+        name_row = name_label.parent
+        assert name_row.has_class("buddy-config-row-main")
+        assert [child.id for child in name_row.children] == [
+            "buddy-config-name-label",
+            "buddy-config-name",
+            "buddy-config-name-apply",
+        ]
+        assert name_row.query_one("#buddy-config-name-apply").has_class("buddy-config-link")
+        inputs = list(pane.query(Input))
+        assert [field.id for field in inputs] == ["buddy-config-name"]
+        assert isinstance(inputs[0], EnhancedInput)
+        assert list(pane.query(Switch)) == []
+
         assert dialog.query_one("#buddy-config-model-label", Label)
 
         # The Muted control is a Checkbox carrying its own label, not a Switch.

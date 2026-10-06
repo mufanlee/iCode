@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Self
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Horizontal, VerticalGroup, VerticalScroll
+from textual.containers import Horizontal, VerticalGroup
 from textual.events import Click
 from textual.widget import Widget
 from textual.widgets import Button, Static
@@ -111,11 +111,11 @@ class _FramePreview(Static):
         self.update(Text("\n").join(lines), layout=False)
 
 
-class AppearancePane(VerticalScroll):
+class AppearancePane(Widget):
     """A switchable portrait preview over the six frame rows, import and remove controls."""
 
     DEFAULT_CSS = """
-    AppearancePane { height: 1fr; }
+    AppearancePane { width: 1fr; height: auto; }
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = 24,
        PORTRAIT_HEIGHT = 11. A fixed size lets a repaint stay in place instead
        of re-laying out. */
