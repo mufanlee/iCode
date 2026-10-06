@@ -48,6 +48,7 @@ _REMOVE_PREFIX = "frame-remove-"
 _OPEN_FOLDER_ID = "buddy-config-open-folder"
 _HINT_ID = "buddy-config-appearance-hint"
 _PREVIEW_ID = "buddy-config-frame-preview"
+_PREVIEW_ROW_ID = "buddy-config-frame-preview-row"
 _PREVIEW_LABEL_ID = "buddy-config-frame-preview-label"
 
 
@@ -116,6 +117,11 @@ class AppearancePane(VerticalScroll):
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = 24,
        PORTRAIT_HEIGHT = 11. A fixed size lets a repaint stay in place instead
        of re-laying out. */
+    /* The preview gets its own full-width single-child row so it is centred on
+       its OWN 24-wide column: a vertical container's align centres the widest
+       child's column and left-aligns narrower siblings, so the preview would
+       otherwise sit at the pane's left edge. */
+    AppearancePane #buddy-config-frame-preview-row { width: 1fr; height: auto; align: center top; }
     AppearancePane #buddy-config-frame-preview { width: 24; height: 11; margin: 0 0 1 0; }
     AppearancePane .frame-row { height: auto; }
     /* Each row is a growing state label plus fixed-size Import/Remove buttons.
@@ -146,7 +152,8 @@ class AppearancePane(VerticalScroll):
             Text(self._render_message(_PREVIEW_LABEL.bind())),
             id=_PREVIEW_LABEL_ID,
         )
-        yield _FramePreview(self._ports, id=_PREVIEW_ID)
+        with Horizontal(id=_PREVIEW_ROW_ID):
+            yield _FramePreview(self._ports, id=_PREVIEW_ID)
         for row in self.frame_rows():
             with Horizontal(classes="frame-row", id=f"{_ROW_PREFIX}{row.frame}"):
                 yield Static(

@@ -986,3 +986,34 @@ async def test_appearance_last_row_buttons_stay_reachable(tmp_path) -> None:
             pilot=pilot,
             description="the open-folder button below the last row is still clickable",
         )
+
+
+async def test_appearance_preview_is_horizontally_centered(tmp_path) -> None:
+    """The 24-wide preview is centred on the pane, not pinned to its left edge.
+
+    A vertical container's align centres the widest child's column and
+    left-aligns narrower siblings, so the preview used to sit at the pane's left
+    edge. Giving it its own full-width single-child row fixes that.
+    """
+    from textual.widgets import Static
+
+    from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
+    from tests.support.tui_app_harness import make_chrys_app
+
+    app = make_chrys_app(tmp_path)
+    ports = StubPorts()
+
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        dialog = await _open_mounted_dialog(pilot, app, ports)
+        await _show_tab(pilot, dialog, "buddy-config-tab-appearance")
+        await pilot.pause()
+
+        pane = dialog.query_one(AppearancePane)
+        preview = dialog.query_one("#buddy-config-frame-preview", Static)
+
+        pane_center = pane.content_region.x + pane.content_region.width // 2
+        assert abs((preview.region.x + preview.region.width // 2) - pane_center) <= 1
+        # The narrower preview now sits centred INSIDE the pane rather than at
+        # its left edge — exactly what was broken.
+        assert preview.region.x > pane.content_region.x
