@@ -58,6 +58,8 @@ class BuddyConfigCoordinator:
         # CUSTOM means "custom art is present AND decodes": an unreadable or
         # undecodable file must read as BUILTIN, matching the renderer's silent
         # fallback. ``load_external_pixel_frame`` returns None on any failure.
+        # A read rather than a write, so it answers on the event loop: a stat and
+        # the renderer's own LRU-cached decode, not a wait on the save-file lock.
         species = self.species()
         if species is None:
             return FrameState.BUILTIN
@@ -110,6 +112,8 @@ class BuddyConfigCoordinator:
             await self._callbacks.save_settings({}, (REPLY_MODEL_KEY,))
 
     def open_assets_dir(self) -> None:
+        # Deliberately on the event loop: a missing file manager is reported
+        # through a UI notification, which must not run on a worker thread.
         directory = self.assets_dir()
         try:
             directory.mkdir(parents=True, exist_ok=True)

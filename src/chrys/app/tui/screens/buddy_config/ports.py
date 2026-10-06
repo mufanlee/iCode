@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from chrys.app.features.buddy.model import Buddy, Species
+    from chrys.app.features.buddy.model import Buddy
     from chrys.foundation.i18n import MessageRef
 
 
@@ -25,9 +25,7 @@ class BuddyConfigPorts(Protocol):
     """Everything the buddy-configuration dialog may ask of the screen."""
 
     def buddy(self) -> Buddy | None: ...
-    def species(self) -> Species | None: ...
     def frame_state(self, frame: int) -> FrameState: ...
-    def assets_dir(self) -> Path: ...
 
     # Edits: each one commits immediately; OSError surfaces as a warning toast.
     async def rename(self, name: str) -> None: ...

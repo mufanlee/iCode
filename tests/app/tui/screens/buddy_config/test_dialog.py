@@ -55,6 +55,38 @@ async def test_profile_pane_parks_its_portrait_timer_while_hidden() -> None:
         await wait_for(timer._active.is_set, pilot=pilot, description="Show restarts the portrait timer")
 
 
+async def test_profile_portrait_ticks_repaint_without_rereading_the_ports() -> None:
+    """A tick repaints the record the portrait was shown; it must not read the save file again."""
+    from chrys.app.features.buddy.model import Buddy
+    from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
+
+    class CountingPorts(StubPorts):
+        def __init__(self) -> None:
+            super().__init__()
+            self.reads = 0
+
+        def buddy(self) -> Buddy | None:
+            self.reads += 1
+            return super().buddy()
+
+    ports = CountingPorts()
+
+    class ProfilePaneApp(TuiVariableDefaultsMixin, App[None]):
+        def compose(self) -> ComposeResult:
+            yield Container(ProfilePane(ports, locale_controller=None))
+
+    async with ProfilePaneApp().run_test(size=(60, 24)) as pilot:
+        pane = pilot.app.query_one(ProfilePane)
+        await wait_for(lambda: pane.is_mounted, pilot=pilot, description="the profile pane is mounted")
+        assert ports.reads >= 1  # the mount read the record at least once
+        mounted_reads = ports.reads
+
+        pane._tick()
+        pane._tick()
+
+        assert ports.reads == mounted_reads
+
+
 async def test_settings_pane_commits_a_rename() -> None:
     from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 

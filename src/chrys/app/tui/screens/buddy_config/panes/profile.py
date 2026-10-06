@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from textual.geometry import Region
     from textual.timer import Timer
 
+    from chrys.app.features.buddy.model import Buddy
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.screens.buddy_config.ports import BuddyConfigPorts
 
@@ -81,7 +82,7 @@ class ProfilePane(Widget):
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="buddy-config-portrait-row"):
-            yield _BuddyPortrait(self._ports, id="buddy-config-portrait")
+            yield _BuddyPortrait(id="buddy-config-portrait")
         with Horizontal(id="buddy-config-facts-row"):
             yield Static("", id="buddy-config-facts")
         with Horizontal(id="buddy-config-hatch-row"):
@@ -105,7 +106,9 @@ class ProfilePane(Widget):
         self._timer = self.set_interval(_PORTRAIT_TICK_SECONDS, self._tick)
         # Paint the first frame (or the egg) unconditionally: the animation tick
         # below is visibility-gated and may not run before the first interval.
-        self._portrait.draw()
+        # The portrait keeps the record it is shown, so its ticks repaint from it
+        # instead of re-reading the save file eight times a second.
+        self._portrait.show(self._ports.buddy())
         # A pane mounted inside a hidden container never receives Show, so the
         # first tick parks the timer until an on_show resumes it.
         self._tick()
@@ -125,7 +128,7 @@ class ProfilePane(Widget):
         self.query_one("#buddy-config-facts", Static).update(Text(self.render_body()))
         self._sync_empty_state()
         if self._portrait is not None:
-            self._portrait.draw()
+            self._portrait.show(self._ports.buddy())
         self._tick()
 
     def refresh_localization(self) -> None:
@@ -169,12 +172,17 @@ class ProfilePane(Widget):
 
 
 class _BuddyPortrait(Static):
-    """A portrait that repaints itself on a fixed cadence."""
+    """A portrait that repaints itself on a fixed cadence from the record it was shown."""
 
-    def __init__(self, ports: BuddyConfigPorts, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__("", **kwargs)
-        self._ports = ports
+        self._buddy: Buddy | None = None
         self._tick_count = 0
+
+    def show(self, buddy: Buddy | None) -> None:
+        """Draw *buddy*; later ticks repaint it without asking the ports again."""
+        self._buddy = buddy
+        self.draw()
 
     def refresh(
         self,
@@ -200,7 +208,7 @@ class _BuddyPortrait(Static):
         _base_background, background = self.background_colors
         width = max(0, self.outer_size.width - self.styles.gutter.width) or PORTRAIT_WIDTH
         bg_rgb = None if self.app.current_theme.ansi else background.rgb
-        buddy = self._ports.buddy()
+        buddy = self._buddy
         if buddy is None:
             self.update(Text("\n").join(render_egg(width=width, bg_rgb=bg_rgb)), layout=False)
             return

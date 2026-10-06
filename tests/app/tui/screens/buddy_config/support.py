@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from chrys.app.features.buddy.model import Buddy, Species
+from chrys.app.features.buddy.model import Buddy
 from chrys.app.tui.screens.buddy_config.ports import FrameState
 
 
@@ -32,14 +32,8 @@ class StubPorts:
     def buddy(self) -> Buddy | None:
         return self._buddy
 
-    def species(self) -> Species | None:
-        return self._buddy.species if self._buddy else None
-
     def frame_state(self, frame: int) -> FrameState:
         return FrameState.CUSTOM if frame in self.custom_frames else FrameState.BUILTIN
-
-    def assets_dir(self) -> Path:
-        return Path("assets")
 
     async def rename(self, name: str) -> None:
         self.calls.append(("rename", name))

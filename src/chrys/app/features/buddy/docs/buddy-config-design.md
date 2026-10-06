@@ -67,9 +67,10 @@ The adapter lives beside the other MainScreen ports:
   the same way `SettingsCoordinator` is injected into `SettingsDialog`.
 
 The dialog holds no file or settings knowledge: it reads state through the
-ports and calls port methods for every change. The adapter owns all blocking
-work (buddy writes wait on the save-file lock) on `asyncio.to_thread`, and turns
-failures into toasts.
+ports and calls port methods for every change. The adapter runs the writes
+(buddy saves may wait seconds on the save-file lock) on `asyncio.to_thread` and
+turns failures into toasts. The reads stay on the event loop, where they are a
+`stat` plus the renderer's own LRU-cached decode rather than a lock wait.
 
 ### Entry points
 
@@ -96,12 +97,9 @@ class FrameState(StrEnum):
 
 class BuddyConfigPorts(Protocol):
     def buddy(self) -> Buddy | None: ...          # None before one has hatched
-    # Read-only identity/progress come from buddy(). The Appearance pane's only
-    # read is frame_state(); species() and assets_dir() serve the adapter's own
-    # writes and are never called by the dialog.
-    def species(self) -> Species | None: ...      # the saved buddy's species, None when there is none
+    # Read-only identity/progress come from buddy(); this is the Appearance
+    # pane's only read.
     def frame_state(self, frame: int) -> FrameState: ...
-    def assets_dir(self) -> Path: ...
     # Edits — each one commits immediately; OSError surfaces as a warning toast.
     async def rename(self, name: str) -> None: ...
     async def set_muted(self, muted: bool) -> None: ...
@@ -117,8 +115,8 @@ class BuddyConfigPorts(Protocol):
     def notify(self, message: MessageRef | str, *, severity: str, timeout: float) -> None: ...
 ```
 
-`FrameState.frame_state` is decided by whether `assets_dir()/<species>_<frame>.png`
-exists and decodes as an image.
+`FrameState.frame_state` is decided by whether the adapter's assets directory
+holds a `<species>_<frame>.png` that decodes as an image.
 
 ## Data and persistence
 
@@ -141,11 +139,12 @@ it.
 `buddy_config` does not depend on a private name; `load_external_pixel_frame`
 is updated to call it.
 
-Reads happen when the dialog opens; the Profile portrait then re-reads the saved
-buddy on every animation tick, so a rename made in another instance shows up
-there while the dialog is open. The other panes keep what they read at mount: a
-change made elsewhere reaches them only when the dialog is reopened. This is
-accepted (the sidebar panel already polls the same file).
+Reads happen when the dialog opens and after every change the dialog itself
+makes: the Profile pane re-reads the record then and hands it to its portrait,
+whose animation ticks repaint from that snapshot rather than from the file. A
+change another instance makes while the dialog is open therefore reaches the
+panes only when the dialog is reopened. This is accepted (the sidebar panel
+already polls the same file).
 
 ## UI / UX
 
@@ -265,9 +264,8 @@ Reusing the existing buddy test scaffolding
   progress; the dialog no longer offers it.
 - Imported art is stored as supplied and normalized by the renderer at load
   (nearest-neighbor to 20×16), so the dialog does not resize on import.
-- Only the Profile portrait live-refreshes on another instance's change (it
-  re-reads the record on each animation tick); the other panes show it after a
-  reopen.
+- The open dialog does not live-refresh: it re-reads the record when it opens
+  and after its own changes, so another instance's change shows after a reopen.
 - Opening the OS file manager (`[Open folder]`) is best-effort: with no file
   manager the MainScreen warns, a genuine failure is logged, and neither ever
   fails the dialog.
