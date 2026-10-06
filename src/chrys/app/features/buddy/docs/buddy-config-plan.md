@@ -1597,3 +1597,14 @@ these ways:
   - Three new section-title ids were added: `tui.buddy_config.section.identity` ("Identity"),
     `tui.buddy_config.section.behaviour` ("Behaviour") and `tui.buddy_config.section.frames`
     ("Frames").
+
+- A later change removed the re-hatch flow from the dialog entirely (this supersedes the
+  hidden-re-hatch-button note above):
+  - The bottom action row holds only **Close**; the **Re-hatch** error button and the
+    `ConfirmDialog` (`screens/dialogs/confirm.py`) it pushed are gone.
+  - `BuddyConfigPorts.rehatch` and the coordinator's `rehatch` method were removed.
+  - The retired message ids `tui.buddy_config.action.rehatch` and
+    `tui.buddy_config.rehatch.confirm` were dropped from the catalogs and the buddy oracle
+    id set.
+  - `actions.rehatch()` is kept as a feature-layer action; it is simply no longer reachable
+    from the dialog.

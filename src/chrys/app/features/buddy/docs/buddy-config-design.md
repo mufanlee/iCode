@@ -9,14 +9,14 @@ rename it, mute it, pick the model that writes its replies, and install or
 remove custom pixel artwork for their species. It never changes what the buddy
 *is* — species, rarity, shiny, traits and progress stay whatever the hatch
 draw and the turns made them. Only a full re-hatch (a fresh random draw) can
-change those, and it is behind a confirmation.
+change those; the feature-layer action `actions.rehatch()` still exists, but the
+dialog no longer exposes it.
 
 ## Goals
 
 - One place to see a buddy's identity and progress, with a live portrait.
 - Edit the mild, non-identity fields: name, mute, reply model.
 - Manage the custom PNG overrides for the current species, with preview.
-- Re-hatch: replace the buddy with a fresh random draw, after confirming.
 
 ## Non-goals
 
@@ -102,7 +102,6 @@ class BuddyConfigPorts(Protocol):
     async def set_muted(self, muted: bool) -> None: ...
     async def set_reply_model(self, model_id: str) -> None: ...
     async def hatch(self) -> None: ...            # draw the first buddy (the empty-state button)
-    async def rehatch(self) -> None: ...
     async def import_frame(self, frame: int, source: Path) -> None: ...
     async def remove_frame(self, frame: int) -> None: ...
     # Reply-model field
@@ -124,21 +123,14 @@ All writes reuse the buddy feature's existing "lock + atomic replace" path
 - **name** → `actions.rename()`; **mute** → `actions.set_muted()`.
 - **reply model** → the settings store, key `model.role.buddy_model_id` (the
   same persistence path the settings panel uses).
-- **re-hatch** → a **new action** `actions.rehatch()`:
-  ```python
-  def rehatch(rng: Random | None = None) -> Buddy | None:
-      """Replace the saved buddy with a fresh draw. None when none has hatched."""
-      if _STORE.load() is None:
-          return None
-      newborn = hatchling(rng if rng is not None else SystemRandom())
-      return _grown(_STORE.update(lambda current: newborn if current is not None else None))
-  ```
-  (The existing `hatch()` is a no-op when a buddy already exists; it cannot
-  satisfy a re-roll.)
 - **import a frame** → validate the source decodes as an image (PIL), then
   atomically copy it to `assets_dir()/<species>_<frame>.png`. A file that fails
   validation writes nothing (no half-installed frame).
 - **remove a frame** → delete that file.
+
+The feature-layer action `actions.rehatch()` — which replaces the saved buddy
+with a fresh draw — is kept (and unit-tested), but the dialog no longer reaches
+it.
 
 `pixel_sprites._get_assets_dir()` is promoted to a public `assets_dir()` so
 `buddy_config` does not depend on a private name; `load_external_pixel_frame`
@@ -184,13 +176,12 @@ button row keeps the theme's variant buttons.
   retranslate on a live locale switch: resetting its options would re-post
   `Changed` and write the value back through the ports. A documented residual,
   not an API limit.
-- **Button row** — a shared `DialogButtonRow` docked inside the container:
-  `[Re-hatch]` (error variant, opens `screens/dialogs/confirm.py` first) +
-  `[Close]` (warning variant); the autosave status is the container's border
-  subtitle.
+- **Button row** — a shared `DialogButtonRow` docked inside the container: a
+  single `[Close]` (warning variant). The autosave status is the container's
+  border subtitle.
 - **Empty state** — with no buddy, the Profile tab shows the egg and a hint
   with an inline hatch button (calling `actions.hatch()`); the Appearance tab is
-  hidden and not selectable, and the re-hatch button is hidden.
+  hidden and not selectable.
 
 The dialog is a modal, so opening it must not restyle, recompose or relayout
 `MainScreen` (AGENTS performance rule); the portrait repaints only itself.
@@ -229,8 +220,7 @@ Reusing the existing buddy test scaffolding
 - Dialog behavior under a real `run_test()`/`make_chrys_app`: `/buddy config`
   opens; tabs switch; rename commits; mute toggles; reply-model select
   persists to a temp config dir; import copies the file and updates the
-  preview; remove falls back to built-in; re-hatch requires confirmation and
-  overwrites the record.
+  preview; remove falls back to built-in; Close dismisses the dialog.
 - `BuddyConfigPorts` adapter unit tests: threaded save, `OSError` path.
 - `actions.rehatch` unit test paired with `hatch`: with a record present the
   record is replaced (not reused); with none it is a no-op.
@@ -245,9 +235,9 @@ Reusing the existing buddy test scaffolding
 
 ## Risks and accepted trade-offs
 
-- Immediate save means no undo; the user re-edits or re-hatches. Accepted.
-- Re-hatch is irreversible and destroys progress; it is behind a confirmation
-  dialog.
+- Immediate save means no undo; the user re-edits. Accepted.
+- Re-hatch (the feature-layer `actions.rehatch()`) is irreversible and destroys
+  progress; the dialog no longer offers it.
 - Imported art is stored as supplied and normalized by the renderer at load
   (nearest-neighbor to 20×16), so the dialog does not resize on import.
 - The dialog does not live-refresh on another instance's change while open.
