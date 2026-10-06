@@ -4365,12 +4365,6 @@ msgstr "导入"
 msgid "tui.buddy_config.action.open_folder"
 msgstr "打开文件夹"
 
-#. English: Re-hatch
-#. chrys-meta={"fingerprint":"c69646750330de996ffedd9f70643c557de86023199827c545b6f9277d97b4d8","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/screens/buddy_config/dialog.py
-msgid "tui.buddy_config.action.rehatch"
-msgstr "重新孵化"
-
 #. English: Remove
 #. chrys-meta={"fingerprint":"5ab83d83e77d1fd96ebcc0b0ecc9ce26afa1a54d844f2763f4d3e8f8a8903075","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
@@ -4442,13 +4436,6 @@ msgstr "回复模型"
 #: src/chrys/app/tui/screens/main/screen.py
 msgid "tui.buddy_config.open_assets.unavailable"
 msgstr "当前环境无法打开伙伴贴图文件夹。"
-
-#. English: Re-hatch replaces your buddy with a fresh random draw. Its species,
-#. rarity, traits and progress cannot be recovered.
-#. chrys-meta={"fingerprint":"539c2b73b11bf3afb8e0ca18510df81131bf95b9873dcc303847998f43c1f72e","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/screens/buddy_config/dialog.py
-msgid "tui.buddy_config.rehatch.confirm"
-msgstr "重新孵化会用一次全新的随机抽取替换你的伙伴。其物种、稀有度、特质和进度都无法恢复。"
 
 #. English: Follow the active model
 #. chrys-meta={"fingerprint":"1777275085f3e51b4387c9ed60bdca4c6a93059198d9097d85ad22ad23042056","multiline":false,"placeholders":[]}
@@ -14048,6 +14035,12 @@ msgstr "提示已被钩子阻止。"
 
 #~ msgid "tui.buddy.thinking_sounds"
 #~ msgstr "💭 *{name} 发出思考的声音*..."
+
+#~ msgid "tui.buddy_config.action.rehatch"
+#~ msgstr "重新孵化"
+
+#~ msgid "tui.buddy_config.rehatch.confirm"
+#~ msgstr "重新孵化会用一次全新的随机抽取替换你的伙伴。其物种、稀有度、特质和进度都无法恢复。"
 
 #~ msgid "tui.chat.copy_agent_response_button"
 #~ msgstr "复制"

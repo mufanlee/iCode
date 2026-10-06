@@ -4318,12 +4318,6 @@ msgstr ""
 msgid "tui.buddy_config.action.open_folder"
 msgstr ""
 
-#. English: Re-hatch
-#. chrys-meta={"fingerprint":"c69646750330de996ffedd9f70643c557de86023199827c545b6f9277d97b4d8","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/screens/buddy_config/dialog.py
-msgid "tui.buddy_config.action.rehatch"
-msgstr ""
-
 #. English: Remove
 #. chrys-meta={"fingerprint":"5ab83d83e77d1fd96ebcc0b0ecc9ce26afa1a54d844f2763f4d3e8f8a8903075","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
@@ -4391,13 +4385,6 @@ msgstr ""
 #. chrys-meta={"fingerprint":"80e06c5c82f681b6d4b62bccd555537cff085460c81cc10230bfbb7b56cb6fd7","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/screen.py
 msgid "tui.buddy_config.open_assets.unavailable"
-msgstr ""
-
-#. English: Re-hatch replaces your buddy with a fresh random draw. Its species,
-#. rarity, traits and progress cannot be recovered.
-#. chrys-meta={"fingerprint":"539c2b73b11bf3afb8e0ca18510df81131bf95b9873dcc303847998f43c1f72e","multiline":false,"placeholders":[]}
-#: src/chrys/app/tui/screens/buddy_config/dialog.py
-msgid "tui.buddy_config.rehatch.confirm"
 msgstr ""
 
 #. English: Follow the active model
