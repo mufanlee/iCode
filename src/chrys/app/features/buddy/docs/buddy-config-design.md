@@ -176,9 +176,10 @@ setting is a Settings-style row: a fixed-width label plus the compact, frameless
   retranslate on a live locale switch: resetting its options would re-post
   `Changed` and write the value back through the ports. A documented residual,
   not an API limit.
-- **Empty state** — with no buddy, the Profile tab shows the egg and a hint
-  with an inline hatch button (calling `actions.hatch()`); the Appearance tab is
-  hidden and not selectable.
+- **Empty state** — with no buddy, the Profile tab shows a pixel-art egg
+  (`portrait.py::render_egg`, drawn through the same half-block pipeline and
+  palette style as the portraits) and a hint with an inline hatch button
+  (calling `actions.hatch()`); the Appearance tab is hidden and not selectable.
 
 The dialog is a modal, so opening it must not restyle, recompose or relayout
 `MainScreen` (AGENTS performance rule); the portrait repaints only itself.

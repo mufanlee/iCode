@@ -430,9 +430,13 @@ async def test_dialog_empty_state_shows_the_egg_and_hatches_inline(tmp_path) -> 
         app.push_screen(dialog)
         await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
 
-        # The portrait area shows the egg while there is no buddy.
+        # The portrait area shows the egg placeholder while there is no buddy.
+        from chrys.app.features.buddy.portrait import EGG_HEIGHT
+
         portrait = dialog.query_one("#buddy-config-portrait", Static)
-        assert "🥚" in str(portrait.content)
+        egg = str(portrait.content)
+        assert len(egg.splitlines()) == EGG_HEIGHT
+        assert "▀" in egg
 
         hatch = dialog.query_one("#buddy-config-hatch", Button)
         assert hatch.display

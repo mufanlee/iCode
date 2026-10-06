@@ -35,11 +35,6 @@ _EMPTY_HINT = msg(
 )
 _HATCH = msg("tui.buddy_config.action.hatch", fallback="Hatch")
 
-# The buddy command's no-buddy intro (tui.buddy.intro_no_buddy) draws this same
-# glyph; it is not exposed as a standalone constant, so the empty state renders
-# it directly.
-_EGG = "🥚"
-
 _PORTRAIT_TICK_SECONDS = 1 / 8
 
 
@@ -62,10 +57,9 @@ class ProfilePane(Widget):
        PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
        place instead of re-laying out (a bare width or height:auto would). */
     ProfilePane #buddy-config-portrait { width: 24; height: 11; text-align: center; }
-    /* The empty state shows a lone egg. An 11-row box would leave ten blank rows
-       under it, so the box shrinks to the egg's single line; only a state change
-       (hatching) resizes it, while animation ticks still repaint in place. */
-    ProfilePane.buddy-config-empty #buddy-config-portrait { height: 1; }
+    /* The empty state shows the egg placeholder, which sizes itself, so the box
+       hugs it instead of reserving the portrait's eleven rows. */
+    ProfilePane.buddy-config-empty #buddy-config-portrait { height: auto; }
     /* auto width (not full-bleed) so the fact sheet and the hint read as a centered
        block rather than hugging the left edge; the block keeps its internal alignment. */
     ProfilePane #buddy-config-facts { width: auto; height: auto; }
@@ -199,17 +193,18 @@ class _BuddyPortrait(Static):
     def draw(self) -> None:
         """Paint the current idle frame in place, or the egg when there is no buddy."""
         from chrys.app.features.buddy.animation import get_idle_frame
-        from chrys.app.features.buddy.portrait import render_portrait
+        from chrys.app.features.buddy.portrait import EGG_WIDTH, render_egg, render_portrait
 
-        buddy = self._ports.buddy()
-        if buddy is None:
-            self.update(Text(_EGG), layout=False)
-            return
-        frame, blink = get_idle_frame(buddy.species, self._tick_count)
         # content_size resolves region through the compositor and can arrange
         # the entire screen. outer_size is the latest cached layout size.
         _base_background, background = self.background_colors
         width = max(0, self.outer_size.width - self.styles.gutter.width)
+        bg_rgb = None if self.app.current_theme.ansi else background.rgb
+        buddy = self._ports.buddy()
+        if buddy is None:
+            self.update(Text("\n").join(render_egg(width=width or EGG_WIDTH, bg_rgb=bg_rgb)), layout=False)
+            return
+        frame, blink = get_idle_frame(buddy.species, self._tick_count)
         lines = render_portrait(
             buddy.appearance,
             buddy.display_name,
@@ -217,7 +212,7 @@ class _BuddyPortrait(Static):
             blink,
             width=width or PORTRAIT_WIDTH,
             effect_tick=self._tick_count,
-            bg_rgb=None if self.app.current_theme.ansi else background.rgb,
+            bg_rgb=bg_rgb,
         )
         # The portrait size is fixed by CSS; frames only repaint. layout=True
         # here would force a full-screen arrange per animation tick.

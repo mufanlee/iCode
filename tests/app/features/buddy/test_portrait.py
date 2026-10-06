@@ -12,7 +12,15 @@ from rich.text import Text
 
 from chrys.app.features.buddy.model import Appearance, Rarity, Species
 from chrys.app.features.buddy.pixel_sprites import PIXEL_HEIGHT, PIXEL_WIDTH, render_pixel_sprite
-from chrys.app.features.buddy.portrait import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RARITY_COLORS, render_portrait
+from chrys.app.features.buddy.portrait import (
+    EGG_HEIGHT,
+    EGG_WIDTH,
+    PORTRAIT_HEIGHT,
+    PORTRAIT_WIDTH,
+    RARITY_COLORS,
+    render_egg,
+    render_portrait,
+)
 
 
 def _look(species: Species = Species.RABBIT) -> Appearance:
@@ -128,3 +136,20 @@ def test_ansi_shiny_sweep_uses_terminal_contrast_without_a_fixed_rgb_highlight()
         assert styles[badge_start + tick].bold and styles[badge_start + tick].reverse
         assert not styles[badge_start + 1 - tick].reverse
         assert styles[badge_start + tick].color == styles[badge_start + 1 - tick].color
+
+
+def test_egg_placeholder_is_drawn_as_an_egg_shaped_sprite() -> None:
+    silhouette = [line.plain for line in render_egg(bg_rgb=None)]
+    assert len(silhouette) == EGG_HEIGHT
+    widths = [sum(character != " " for character in line) for line in silhouette]
+    assert widths[0] < widths[1] < max(widths)
+    assert widths[-1] < widths[-2] < max(widths)
+    assert max(widths) == EGG_WIDTH - 2
+
+
+def test_egg_placeholder_centres_instead_of_stretching() -> None:
+    native = render_egg()
+    widened = render_egg(width=40)
+    assert all(line.cell_len == 40 for line in widened)
+    for narrow, wide in zip(native, widened, strict=True):
+        assert wide.plain == (" " * 14) + narrow.plain + (" " * 14)
