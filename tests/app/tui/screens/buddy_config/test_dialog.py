@@ -307,9 +307,9 @@ async def test_dialog_frames_the_tabs_and_buttons_in_one_centered_container(tmp_
         assert dialog.query_one("#buddy-config-tabs", TabbedContent).border_title is None
         assert list(dialog.query("#buddy-config-footer")) == []
 
-        # Defect 2: the docked button row lives inside the framed box.
-        buttons = dialog.query_one("#buddy-config-buttons")
-        assert container.region.contains_region(buttons.region)
+        # The tabbed content is contained by the framed box.
+        tabs = dialog.query_one("#buddy-config-tabs", TabbedContent)
+        assert container.region.contains_region(tabs.region)
 
         # Defect 1: the container is centred in the screen (equal side margins).
         screen = dialog.region
@@ -594,7 +594,7 @@ async def test_dialog_registers_and_unregisters_its_localization_surface(tmp_pat
 
 
 async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
-    from textual.widgets import Button, Static
+    from textual.widgets import Static
 
     from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
     from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
@@ -611,7 +611,6 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         app.push_screen(dialog)
         await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
 
-        close = dialog.query_one("#buddy-config-close", Button)
         # The three section.* titles: Identity/Behaviour on Settings, Frames on
         # Appearance (its first section is the Preview, keyed separately).
         settings_sections = list(dialog.query_one(SettingsPane).query(".buddy-config-section"))
@@ -621,14 +620,12 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         titled_sections = (identity, behaviour, frames)
 
         assert dialog in controller.registered
-        assert str(close.label) == "EN-MARK"
         assert [str(section.border_title) for section in titled_sections] == ["EN-MARK"] * 3
 
         controller.localizer.marker = "ZH-MARK"
         dialog.refresh_localization()
         await pilot.pause()
 
-        assert str(close.label) == "ZH-MARK"
         container = dialog.query_one("#buddy-config-container")
         assert str(container.border_title) == "ZH-MARK"
         assert str(container.border_subtitle) == "ZH-MARK"

@@ -11,7 +11,7 @@ from textual import on
 from textual.app import ComposeResult
 from textual.containers import VerticalGroup, VerticalScroll
 from textual.content import Content
-from textual.widgets import Button, TabbedContent, TabPane
+from textual.widgets import TabbedContent, TabPane
 
 from chrys.app.tui.binding_display import CLOSE_BINDING, localized_binding
 from chrys.app.tui.i18n import render_str
@@ -19,7 +19,6 @@ from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
 from chrys.app.tui.screens.buddy_config.panes.profile import ProfilePane
 from chrys.app.tui.screens.buddy_config.panes.settings import SettingsPane
 from chrys.app.tui.screens.dialogs.base import BaseDialog
-from chrys.app.tui.widgets import DialogButtonRow, DialogButtonSpec
 from chrys.foundation.i18n import MessageDef, MessageRef, msg
 from chrys.foundation.i18n.formatting import format_message
 
@@ -37,7 +36,6 @@ _TITLE = msg("tui.buddy_config.title", fallback="Buddy")
 _TAB_PROFILE = msg("tui.buddy_config.tab.profile", fallback="Profile")
 _TAB_APPEARANCE = msg("tui.buddy_config.tab.appearance", fallback="Appearance")
 _TAB_SETTINGS = msg("tui.buddy_config.tab.settings", fallback="Settings")
-_CLOSE = msg("tui.buddy_config.action.close", fallback="Close")
 _STATUS = msg("tui.buddy_config.status.autosave", fallback="Changes are saved as you make them")
 
 # The ids that exist depend on whether a buddy was present at compose time.
@@ -81,14 +79,6 @@ class BuddyConfigDialog(BaseDialog[None]):
                         yield self._pane_body(AppearancePane(self._ports, locale_controller=self._locale_controller))
                     with TabPane(self._tab_label(_TAB_SETTINGS.bind()), id=SETTINGS_TAB_ID):
                         yield self._pane_body(SettingsPane(self._ports, locale_controller=self._locale_controller))
-            yield DialogButtonRow(
-                DialogButtonSpec(
-                    Text(self._render_message(_CLOSE.bind())),
-                    id="buddy-config-close",
-                    variant="warning",
-                ),
-                id="buddy-config-buttons",
-            )
 
     def on_mount(self) -> None:
         if self._locale_controller is not None:
@@ -107,15 +97,10 @@ class BuddyConfigDialog(BaseDialog[None]):
         for tab_id, definition in _TAB_SPECS:
             if self.query(f"#{tab_id}"):
                 tabs.get_tab(tab_id).label = self._tab_label(definition.bind())
-        self.query_one("#buddy-config-close", Button).label = Text(self._render_message(_CLOSE.bind()))
         for pane in self._panes():
             pane.refresh_localization()
 
     def action_close(self) -> None:
-        self.dismiss(None)
-
-    @on(Button.Pressed, "#buddy-config-close")
-    def _on_close_pressed(self) -> None:
         self.dismiss(None)
 
     @on(ProfilePane.Hatched)
