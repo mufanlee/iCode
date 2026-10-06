@@ -1580,3 +1580,20 @@ these ways:
 - The buddy entry point is the footer's F7 **Buddy** binding (`localized_binding("f7",
   "buddy_config", …)` → `action_buddy_config`), not the in-panel **Configure** button the plan
   described; that sidebar button and its `ConfigRequested` message were removed.
+- A later "settings-parity" restyle reworked the chrome to match the Settings dialog; it
+  supersedes the flat-button note above:
+  - `#buddy-config-container` is responsive — `width: 92%; max-width: 92; height: 85%;
+    max-height: 48` — not the fixed 32-row box the plan described, and its autosave-status
+    border subtitle is drawn muted (`border-subtitle-color: $text-muted`).
+  - Each tab's body is a `VerticalScroll` (`.buddy-config-pane-scroll`, Settings-like
+    padding); content is grouped in bordered `.buddy-config-section` boxes with `$secondary`
+    titles, and each setting is a Settings-style row (fixed-width label + control).
+  - The panes use the shared `EnhancedInput`/`Select`/`Checkbox` widgets rather than the bare
+    Textual `Input`; in-row actions (`Apply`, `Import`, `Remove`, `Open folder`) are
+    link-style `.buddy-config-link` buttons, not the earlier `flat=True` variant buttons.
+  - The Muted control is a `Checkbox` (carrying its own label), not a `Switch`; the
+    `#buddy-config-muted-label` and `#buddy-config-frame-preview-label` widget ids were
+    removed in the process.
+  - Three new section-title ids were added: `tui.buddy_config.section.identity` ("Identity"),
+    `tui.buddy_config.section.behaviour` ("Behaviour") and `tui.buddy_config.section.frames`
+    ("Frames").
