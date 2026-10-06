@@ -61,7 +61,11 @@ class ProfilePane(Widget):
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = PIXEL_WIDTH + 4 = 24,
        PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
        place instead of re-laying out (a bare width or height:auto would). */
-    ProfilePane #buddy-config-portrait { width: 24; height: 11; }
+    ProfilePane #buddy-config-portrait { width: 24; height: 11; text-align: center; }
+    /* The empty state shows a lone egg. An 11-row box would leave ten blank rows
+       under it, so the box shrinks to the egg's single line; only a state change
+       (hatching) resizes it, while animation ticks still repaint in place. */
+    ProfilePane.buddy-config-empty #buddy-config-portrait { height: 1; }
     /* auto width (not full-bleed) so the fact sheet and the hint read as a centered
        block rather than hugging the left edge; the block keeps its internal alignment. */
     ProfilePane #buddy-config-facts { width: auto; height: auto; }
@@ -151,7 +155,9 @@ class ProfilePane(Widget):
 
     def _sync_empty_state(self) -> None:
         """Show the inline hatch button only while no buddy has hatched."""
-        self.query_one("#buddy-config-hatch", Button).display = self._ports.buddy() is None
+        empty = self._ports.buddy() is None
+        self.query_one("#buddy-config-hatch", Button).display = empty
+        self.set_class(empty, "buddy-config-empty")
 
     def _tick(self) -> None:
         if not is_widget_shown_on_active_screen(self):
