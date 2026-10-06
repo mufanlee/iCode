@@ -193,16 +193,16 @@ class _BuddyPortrait(Static):
     def draw(self) -> None:
         """Paint the current idle frame in place, or the egg when there is no buddy."""
         from chrys.app.features.buddy.animation import get_idle_frame
-        from chrys.app.features.buddy.portrait import EGG_WIDTH, render_egg, render_portrait
+        from chrys.app.features.buddy.portrait import render_egg, render_portrait
 
         # content_size resolves region through the compositor and can arrange
         # the entire screen. outer_size is the latest cached layout size.
         _base_background, background = self.background_colors
-        width = max(0, self.outer_size.width - self.styles.gutter.width)
+        width = max(0, self.outer_size.width - self.styles.gutter.width) or PORTRAIT_WIDTH
         bg_rgb = None if self.app.current_theme.ansi else background.rgb
         buddy = self._ports.buddy()
         if buddy is None:
-            self.update(Text("\n").join(render_egg(width=width or EGG_WIDTH, bg_rgb=bg_rgb)), layout=False)
+            self.update(Text("\n").join(render_egg(width=width, bg_rgb=bg_rgb)), layout=False)
             return
         frame, blink = get_idle_frame(buddy.species, self._tick_count)
         lines = render_portrait(
@@ -210,7 +210,7 @@ class _BuddyPortrait(Static):
             buddy.display_name,
             frame,
             blink,
-            width=width or PORTRAIT_WIDTH,
+            width=width,
             effect_tick=self._tick_count,
             bg_rgb=bg_rgb,
         )

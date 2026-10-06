@@ -34,7 +34,10 @@ SHINY_FPS = 10
 # The placeholder drawn before a buddy hatches: a 12x16 pixel egg laid out for
 # the half-block renderer, so it shares the portraits' pixel look and palette.
 EGG_WIDTH = 12
-EGG_HEIGHT = 8
+# The art's terminal rows plus the corner rows that frame it, as on a portrait.
+EGG_HEIGHT = 16 // 2 + 2
+# The egg has no rarity to advertise yet, so its corners stay neutral.
+EGG_FRAME_COLOR = "#808080"
 _EGG_PALETTE: dict[int, tuple[int, int, int, int]] = {
     0: (0, 0, 0, 0),
     1: (234, 223, 200, 255),  # Warm cream shell
@@ -110,8 +113,11 @@ def render_portrait(
 
 
 def render_egg(*, width: int = EGG_WIDTH, bg_rgb: tuple[int, int, int] | None = DEFAULT_BG_RGB) -> list[Text]:
-    """Render the pre-hatch egg placeholder, centred in *width* columns."""
-    lines = image_to_half_block_lines(matrix_to_image(_EGG_FRAME, _EGG_PALETTE), bg_rgb=bg_rgb)
-    for line in lines:
-        line.align("center", max(EGG_WIDTH, width))
-    return lines
+    """Render the pre-hatch egg placeholder inside neutral portrait corners."""
+    frame_width = max(EGG_WIDTH + 2, width)
+    body = image_to_half_block_lines(matrix_to_image(_EGG_FRAME, _EGG_PALETTE), bg_rgb=bg_rgb)
+    for line in body:
+        line.align("center", frame_width)
+    top = Text("┌" + " " * (frame_width - 2) + "┐", style=EGG_FRAME_COLOR)
+    bottom = Text("└" + " " * (frame_width - 2) + "┘", style=EGG_FRAME_COLOR)
+    return [top, *body, bottom]

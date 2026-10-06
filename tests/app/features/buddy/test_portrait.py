@@ -138,10 +138,17 @@ def test_ansi_shiny_sweep_uses_terminal_contrast_without_a_fixed_rgb_highlight()
         assert styles[badge_start + tick].color == styles[badge_start + 1 - tick].color
 
 
+def test_egg_placeholder_is_framed_like_a_portrait() -> None:
+    lines = render_egg(bg_rgb=None)
+    assert len(lines) == EGG_HEIGHT
+    assert lines[0].plain == "┌" + " " * EGG_WIDTH + "┐"
+    assert lines[-1].plain == "└" + " " * EGG_WIDTH + "┘"
+    assert _styles(lines[0])[0].color is not None
+
+
 def test_egg_placeholder_is_drawn_as_an_egg_shaped_sprite() -> None:
-    silhouette = [line.plain for line in render_egg(bg_rgb=None)]
-    assert len(silhouette) == EGG_HEIGHT
-    widths = [sum(character != " " for character in line) for line in silhouette]
+    art = [line.plain for line in render_egg(bg_rgb=None)[1:-1]]
+    widths = [sum(character != " " for character in line) for line in art]
     assert widths[0] < widths[1] < max(widths)
     assert widths[-1] < widths[-2] < max(widths)
     assert max(widths) == EGG_WIDTH - 2
@@ -151,5 +158,9 @@ def test_egg_placeholder_centres_instead_of_stretching() -> None:
     native = render_egg()
     widened = render_egg(width=40)
     assert all(line.cell_len == 40 for line in widened)
-    for narrow, wide in zip(native, widened, strict=True):
-        assert wide.plain == (" " * 14) + narrow.plain + (" " * 14)
+    assert widened[0].plain == "┌" + " " * 38 + "┐"
+    assert widened[-1].plain == "└" + " " * 38 + "┘"
+    # The art below keeps its native size: 13 pad + 14 + 13 pad across the 40 columns.
+    for narrow, wide in zip(native[1:-1], widened[1:-1], strict=True):
+        assert narrow.cell_len == EGG_WIDTH + 2
+        assert wide.plain == (" " * 13) + narrow.plain + (" " * 13)
