@@ -54,6 +54,9 @@ class ProfilePane(Widget):
        sit at the 66-wide fact sheet's left edge. A single-child row defines the
        column itself, so that child lands truly centred. */
     ProfilePane Horizontal { width: 1fr; height: auto; align: center top; }
+    /* A blank line between the portrait (with its nameplate) and the fact sheet,
+       so the two blocks read as separate pieces rather than one dense stack. */
+    ProfilePane #buddy-config-portrait-row { margin: 0 0 1 0; }
     /* Portrait size mirrors features/buddy/portrait.py: PORTRAIT_WIDTH = PIXEL_WIDTH + 4 = 24,
        PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3 = 11. A fixed size lets a tick repaint in
        place instead of re-laying out (a bare width or height:auto would). */
