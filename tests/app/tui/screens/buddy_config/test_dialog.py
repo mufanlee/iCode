@@ -392,7 +392,7 @@ async def test_profile_empty_state_hatch_is_horizontally_centered(tmp_path) -> N
 
 
 async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> None:
-    from textual.widgets import Button, TabbedContent
+    from textual.widgets import TabbedContent
 
     from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
     from chrys.app.tui.screens.buddy_config.panes.appearance import AppearancePane
@@ -413,7 +413,6 @@ async def test_dialog_without_a_buddy_offers_only_the_profile_tab(tmp_path) -> N
         assert len(dialog.query(ProfilePane)) == 1
         assert list(dialog.query(AppearancePane)) == []
         assert list(dialog.query(SettingsPane)) == []
-        assert not dialog.query_one("#buddy-config-rehatch", Button).display
 
 
 async def test_dialog_empty_state_shows_the_egg_and_hatches_inline(tmp_path) -> None:
@@ -474,7 +473,6 @@ async def test_dialog_reflects_a_freshly_hatched_buddy(tmp_path) -> None:
         assert dialog.active_tab == "buddy-config-tab-profile"
         assert len(dialog.query(AppearancePane)) == 1
         assert len(dialog.query(SettingsPane)) == 1
-        assert dialog.query_one("#buddy-config-rehatch", Button).display
         # The empty hint gives way to the fresh buddy's facts.
         assert ports.buddy().name in str(dialog.query_one("#buddy-config-facts", Static).content)
         assert not dialog.query_one("#buddy-config-hatch", Button).display
@@ -510,10 +508,9 @@ async def test_dialog_hatch_that_yields_no_buddy_keeps_the_empty_state(tmp_path)
         )
         await pilot.pause()
 
-        # A hatch that lands nothing must not mount the buddy-only tabs, reveal
-        # the re-hatch button, or disable the hatch button.
+        # A hatch that lands nothing must not mount the buddy-only tabs or
+        # disable the hatch button.
         assert dialog.query_one(TabbedContent).tab_count == 1
-        assert not dialog.query_one("#buddy-config-rehatch", Button).display
         assert hatch.display
         assert not hatch.disabled
 
@@ -544,59 +541,6 @@ async def test_dialog_switches_tabs_by_clicking_a_header(tmp_path) -> None:
             description="clicking the Settings tab header switches to it",
         )
         assert dialog.active_tab == SETTINGS_TAB_ID
-
-
-async def test_dialog_refreshes_the_panes_after_a_rehatch(tmp_path) -> None:
-    from textual.widgets import Static
-
-    from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
-    from chrys.app.tui.screens.dialogs.confirm import ConfirmDialog
-    from tests.app.tui.screens.buddy_config.support import _record
-    from tests.support.tui_app_harness import make_chrys_app
-
-    app = make_chrys_app(tmp_path)
-    ports = StubPorts()
-    new_name = _record(8, muted=True).name
-
-    async with app.run_test(size=(110, 40)) as pilot:
-        await pilot.pause()
-        dialog = BuddyConfigDialog(ports, locale_controller=None)
-        app.push_screen(dialog)
-        await wait_for(lambda: dialog.is_mounted, pilot=pilot, description="dialog mounted")
-
-        facts = dialog.query_one("#buddy-config-facts", Static)
-        assert ports.buddy().name in str(facts.content)
-
-        await click_when_settled(pilot, "#buddy-config-rehatch")
-        await wait_for(
-            lambda: isinstance(app.screen, ConfirmDialog),
-            pilot=pilot,
-            description="the re-hatch confirmation opens",
-        )
-        await click_when_settled(pilot, "#confirm-yes")
-        await wait_for(
-            lambda: ports.buddy() is not None and ports.buddy().name == new_name,
-            pilot=pilot,
-            description="the re-hatch swaps the buddy",
-        )
-
-        name_input = dialog.query_one("#buddy-config-name", Input)
-        muted = dialog.query_one("#buddy-config-muted", Checkbox)
-        await wait_for(
-            lambda: (
-                new_name in str(facts.content)
-                and name_input.value == new_name
-                and muted.value is True
-                and muted.has_class("-on")
-            ),
-            pilot=pilot,
-            description="every pane repaints onto the new buddy",
-        )
-        # The RENDERED toggle must match the new buddy, not merely its .value: a
-        # bare set_reactive would leave the slider class stale, rendering OFF.
-        assert muted.has_class("-on") is ports.buddy().muted
-        # The resync is a read: it must not rename or flip mute back through the ports.
-        assert not any(kind in {"muted", "rename"} for kind, _ in ports.calls)
 
 
 class _MarkerLocalizer:
@@ -685,7 +629,6 @@ async def test_refresh_localization_swaps_the_dialog_chrome(tmp_path) -> None:
         await pilot.pause()
 
         assert str(close.label) == "ZH-MARK"
-        assert str(dialog.query_one("#buddy-config-rehatch", Button).label) == "ZH-MARK"
         container = dialog.query_one("#buddy-config-container")
         assert str(container.border_title) == "ZH-MARK"
         assert str(container.border_subtitle) == "ZH-MARK"

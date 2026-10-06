@@ -130,7 +130,6 @@ async def test_no_buddy_edits_are_noops(monkeypatch) -> None:
     await coordinator.import_frame(0, Path("art.png"))
     await coordinator.remove_frame(0)
     await coordinator.set_muted(True)
-    await coordinator.rehatch()
 
     assert writes == []
 

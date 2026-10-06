@@ -83,9 +83,6 @@ class BuddyConfigCoordinator:
     async def hatch(self) -> None:
         await self._buddy_write(actions.hatch)
 
-    async def rehatch(self) -> None:
-        await self._buddy_write(actions.rehatch)
-
     async def import_frame(self, frame: int, source: Path) -> None:
         species = self.species()
         if species is None:

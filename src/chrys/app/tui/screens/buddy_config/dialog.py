@@ -37,16 +37,8 @@ _TITLE = msg("tui.buddy_config.title", fallback="Buddy")
 _TAB_PROFILE = msg("tui.buddy_config.tab.profile", fallback="Profile")
 _TAB_APPEARANCE = msg("tui.buddy_config.tab.appearance", fallback="Appearance")
 _TAB_SETTINGS = msg("tui.buddy_config.tab.settings", fallback="Settings")
-_REHATCH = msg("tui.buddy_config.action.rehatch", fallback="Re-hatch")
 _CLOSE = msg("tui.buddy_config.action.close", fallback="Close")
 _STATUS = msg("tui.buddy_config.status.autosave", fallback="Changes are saved as you make them")
-_REHATCH_CONFIRM = msg(
-    "tui.buddy_config.rehatch.confirm",
-    fallback=(
-        "Re-hatch replaces your buddy with a fresh random draw. "
-        "Its species, rarity, traits and progress cannot be recovered."
-    ),
-)
 
 # The ids that exist depend on whether a buddy was present at compose time.
 _TAB_SPECS: tuple[tuple[str, MessageDef], ...] = (
@@ -91,11 +83,6 @@ class BuddyConfigDialog(BaseDialog[None]):
                         yield self._pane_body(SettingsPane(self._ports, locale_controller=self._locale_controller))
             yield DialogButtonRow(
                 DialogButtonSpec(
-                    Text(self._render_message(_REHATCH.bind())),
-                    id="buddy-config-rehatch",
-                    variant="error",
-                ),
-                DialogButtonSpec(
                     Text(self._render_message(_CLOSE.bind())),
                     id="buddy-config-close",
                     variant="warning",
@@ -106,10 +93,6 @@ class BuddyConfigDialog(BaseDialog[None]):
     def on_mount(self) -> None:
         if self._locale_controller is not None:
             self._locale_controller.register_surface(self)
-        # Hidden, not merely disabled, while no buddy exists (the design's empty
-        # state); revealed when a hatch lands. The button spec cannot express
-        # ``display``, so set it once the row is mounted.
-        self.query_one("#buddy-config-rehatch", Button).display = self._ports.buddy() is not None
 
     def on_unmount(self) -> None:
         if self._locale_controller is not None:
@@ -124,7 +107,6 @@ class BuddyConfigDialog(BaseDialog[None]):
         for tab_id, definition in _TAB_SPECS:
             if self.query(f"#{tab_id}"):
                 tabs.get_tab(tab_id).label = self._tab_label(definition.bind())
-        self.query_one("#buddy-config-rehatch", Button).label = Text(self._render_message(_REHATCH.bind()))
         self.query_one("#buddy-config-close", Button).label = Text(self._render_message(_CLOSE.bind()))
         for pane in self._panes():
             pane.refresh_localization()
@@ -136,32 +118,9 @@ class BuddyConfigDialog(BaseDialog[None]):
     def _on_close_pressed(self) -> None:
         self.dismiss(None)
 
-    @on(Button.Pressed, "#buddy-config-rehatch")
-    def _on_rehatch_pressed(self) -> None:
-        from chrys.app.tui.screens.dialogs.confirm import ConfirmDialog
-
-        dialog = ConfirmDialog(
-            title=self._render_message(_REHATCH.bind()),
-            message=self._render_message(_REHATCH_CONFIRM.bind()),
-            confirm_label=self._render_message(_REHATCH.bind()),
-            confirm_variant="error",
-            locale_controller=self._locale_controller,
-        )
-        self.app.push_screen(dialog, self._rehatch_if_confirmed)
-
-    async def _rehatch_if_confirmed(self, confirmed: bool | None) -> None:
-        """Re-hatch, then repaint every mounted pane: they still show the old buddy."""
-        if not confirmed:
-            return
-        await self._ports.rehatch()
-        if not self.is_mounted:
-            return
-        for pane in self._panes():
-            pane.refresh_buddy()
-
     @on(ProfilePane.Hatched)
     async def _on_profile_hatched(self) -> None:
-        """A hatch landed: mount the buddy-only tabs and reveal the re-hatch button.
+        """A hatch landed: mount the buddy-only tabs and repaint the panes.
 
         The Appearance and Settings panes are appended (``add_pane``) rather than
         recomposed: the modal keeps its active Profile tab, its scroll and its
@@ -189,7 +148,6 @@ class BuddyConfigDialog(BaseDialog[None]):
         )
         if not self.is_mounted:
             return
-        self.query_one("#buddy-config-rehatch", Button).display = True
         for pane in self._panes():
             pane.refresh_buddy()
 
