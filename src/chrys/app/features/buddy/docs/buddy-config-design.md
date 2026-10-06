@@ -39,7 +39,7 @@ dialog no longer exposes it.
 | Editable | Mild: name, mute, reply model, custom PNG; identity read-only |
 | Behavior toggles | Reply model + mute only |
 | Appearance | Current species only, with import/remove/open-folder |
-| Reset | Full re-roll (new species/rarity/shiny/traits/name); PNG files untouched |
+| Reset | Dropped: the dialog never re-rolls (a fresh draw destroys progress); the feature-layer `actions.rehatch()` stays, unreached |
 | Frontends | TUI-only dialog |
 | Save model | Edit commits immediately (Approach A) |
 
@@ -49,11 +49,12 @@ A new dialog package, mirroring `screens/settings/`:
 
 ```
 app/tui/screens/buddy_config/
-├── __init__.py          # exports BuddyConfigDialog
+├── __init__.py          # exports BuddyConfigDialog and FrameState
 ├── dialog.py            # BuddyConfigDialog(BaseDialog[None]): the tabbed modal
 ├── dialog.tcss          # layout and styling
 ├── ports.py             # BuddyConfigPorts protocol + FrameState
 └── panes/
+    ├── __init__.py
     ├── profile.py       # read-only facts + live portrait
     ├── appearance.py    # 6-frame asset manager + preview
     └── settings.py      # name input, mute checkbox, reply-model select
@@ -93,7 +94,9 @@ class FrameState(StrEnum):
 
 class BuddyConfigPorts(Protocol):
     def buddy(self) -> Buddy | None: ...          # None before one has hatched
-    # Read-only identity/progress come from buddy(); appearance uses these:
+    # Read-only identity/progress come from buddy(). The Appearance pane's only
+    # read is frame_state(); species() and assets_dir() serve the adapter's own
+    # writes and are never called by the dialog.
     def species(self) -> Species | None: ...      # the saved buddy's species, None when there is none
     def frame_state(self, frame: int) -> FrameState: ...
     def assets_dir(self) -> Path: ...
@@ -106,7 +109,7 @@ class BuddyConfigPorts(Protocol):
     async def remove_frame(self, frame: int) -> None: ...
     # Reply-model field
     def reply_model(self) -> str: ...                    # the stored settings.buddy_model; "" means "follow active"
-    def model_options(self) -> list[tuple[str, str]]: ...  # (value, label); first is ("", follow)
+    def model_options(self) -> list[tuple[str, str]]: ...  # (value, label); the pane labels the ("", …) entry "follow"
     # Chrome
     def open_assets_dir(self) -> None: ...               # opens assets_dir() in the OS file manager
     def notify(self, message: MessageRef | str, *, severity: str, timeout: float) -> None: ...
@@ -136,9 +139,11 @@ it.
 `buddy_config` does not depend on a private name; `load_external_pixel_frame`
 is updated to call it.
 
-Reads happen once when the dialog opens. A change another instance makes while
-the dialog is open is not pushed into it; reopening shows it. This is accepted
-(the sidebar panel already polls the same file).
+Reads happen when the dialog opens; the Profile portrait then re-reads the saved
+buddy on every animation tick, so a rename made in another instance shows up
+there while the dialog is open. The other panes keep what they read at mount: a
+change made elsewhere reaches them only when the dialog is reopened. This is
+accepted (the sidebar panel already polls the same file).
 
 ## UI / UX
 
@@ -157,8 +162,9 @@ setting is a Settings-style row: a fixed-width label plus the compact, frameless
 `EnhancedInput`/`Select`/`Checkbox`. In-row actions (`Apply`, `Import`,
 `Remove`, `Open folder`) are link-style `.buddy-config-link` buttons.
 
-- **Profile** — live animated portrait on the left; read-only fields on the
-  right: name, species, rarity (with evolution stage), shiny, the four traits
+- **Profile** — a live animated portrait stacked above the read-only fields,
+  each block centred on its own width with a blank line between them. The
+  fields: name, species, rarity (with evolution stage), shiny, the four traits
   with their growth, level/XP, hatched date, turns/pets, persona. Values are
   formatted like `commands.buddy_card`.
 - **Appearance** — a **Preview** section (a portrait preview, default frame 0,
@@ -180,7 +186,17 @@ setting is a Settings-style row: a fixed-width label plus the compact, frameless
   (`portrait.py::render_egg`: the same half-block pipeline as the portraits,
   inside the same corner frame but with neutral corners, since a rarity is only
   known after hatching) and a hint with an inline hatch button (calling
-  `actions.hatch()`); the Appearance tab is hidden and not selectable.
+  `actions.hatch()`). Both the Appearance and the Settings tabs are hidden and
+  not selectable until a buddy exists; an in-dialog hatch mounts both
+  (`TabbedContent.add_pane`, without recomposing the dialog) and leaves the
+  Profile tab active.
+
+Details worth knowing: the portrait repaints on a 1/8 s timer that pauses while
+the pane is hidden, and it and the frame preview pin their repaints to cached
+geometry, so a tick never re-lays out; clicking a frame row marks it `-selected`
+and points the preview at it. `chrys.tcss` gives the container its modal
+background in both the plain and the `App:ansi` flavour, as the other dialogs
+do.
 
 The dialog is a modal, so opening it must not restyle, recompose or relayout
 `MainScreen` (AGENTS performance rule); the portrait repaints only itself.
@@ -188,8 +204,9 @@ The dialog is a modal, so opening it must not restyle, recompose or relayout
 ## i18n
 
 Every user-facing string is a module-level `msg(...)` rendered through
-`app/tui/i18n.py` (`render_text`/`render_content`/`render_str`); no raw English
-at notify/label/placeholder sinks. New ids → run
+`app/tui/i18n.py` — `render_str` for text sinks, and `Content.from_text` with
+`markup=False` for widget captions. No raw English at notify/label/placeholder
+sinks. New ids → run
 `scripts/i18n.py extract → update`, translate every new/`#, fuzzy` entry in
 `locales/zh-Hans/LC_MESSAGES/chrys.po`, `compile`, `check`, and add the ids to
 `tests/foundation/i18n/_buddy_catalog_oracle_ids.py` with the bumped
@@ -206,6 +223,12 @@ User-visible change: update the buddy / `/buddy` section in both `docs/en/` and
   (`OSError`, including `TimeoutError`) → a warning toast in the style of
   `commands._SAVE_FAILED`; nothing in the dialog's in-memory state is faked.
 - Import source not a decodable image → warning; nothing is written.
+- Removing a frame whose file cannot be deleted (`OSError`) → warning; the row
+  keeps showing the state the disk has.
+- A typed name that cleans to nothing → warning from the pane; the saved name is
+  left alone.
+- No desktop file manager to reveal the assets folder → a warning toast from the
+  MainScreen side; a genuine open failure is logged. Neither fails the dialog.
 - Empty model list / no buddy → placeholder and empty state, no crash.
 - Concurrent edits by another instance → each action is a locked
   read-modify-write; nothing is staged, so nothing is clobbered.
@@ -240,6 +263,9 @@ Reusing the existing buddy test scaffolding
   progress; the dialog no longer offers it.
 - Imported art is stored as supplied and normalized by the renderer at load
   (nearest-neighbor to 20×16), so the dialog does not resize on import.
-- The dialog does not live-refresh on another instance's change while open.
-- Opening the OS file manager (`[Open folder]`) is best-effort: a platform
-  failure is logged and does not fail the dialog.
+- Only the Profile portrait live-refreshes on another instance's change (it
+  re-reads the record on each animation tick); the other panes show it after a
+  reopen.
+- Opening the OS file manager (`[Open folder]`) is best-effort: with no file
+  manager the MainScreen warns, a genuine failure is logged, and neither ever
+  fails the dialog.
