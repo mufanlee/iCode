@@ -256,6 +256,32 @@ async def test_closing_the_panel_stops_waiting_for_the_answer(monkeypatch: pytes
 
 
 @pytest.mark.asyncio
+async def test_a_callback_arriving_while_the_panel_is_pruned_leaves_its_children_alone() -> None:
+    """Textual prunes a widget's children before it unmounts the widget, with ``is_mounted`` still True.
+
+    A pet answer or a queued animation tick landing in that window must not query the
+    children it can no longer see.
+    """
+    actions.hatch(Random(1))
+    actions.rename("Renamed")
+
+    async with _PanelApp().run_test(size=(42, 40)) as pilot:
+        panel = pilot.app.query_one(BuddyPanel)
+        # Fault injection of that window: the children are already gone and the
+        # panel is being pruned, while the panel itself is still mounted.
+        await panel.query_children().remove()
+        panel._pruning = True
+        assert panel.is_mounted
+        with pytest.raises(NoMatches):
+            panel.query_one(".buddy-empty")
+
+        panel.reload()  # the tail of a pet answer
+        panel._on_tick()  # a queued idle tick
+
+        await pilot.pause()
+
+
+@pytest.mark.asyncio
 async def test_a_pet_is_counted_on_a_thread_while_the_panel_goes_on(monkeypatch: pytest.MonkeyPatch) -> None:
     actions.hatch(Random(1))
     actions.set_muted(True)  # nobody to ask: the count is all that is left of a pet

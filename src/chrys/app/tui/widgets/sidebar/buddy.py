@@ -211,16 +211,29 @@ class BuddyPanel(Widget):
 
     def refresh_localization(self) -> None:
         """Retranslate the visible empty, level, and interaction status chrome."""
-        if self.is_mounted:
+        if self.is_mounted and self._can_query_children():
             self._show(".buddy-empty", Text(self._render_message(_BUDDY_EMPTY.bind())))
             self._redraw()
 
     def watch_buddy(self, _buddy: Buddy | None) -> None:
-        if self.is_mounted:
+        if self.is_mounted and self._can_query_children():
             self._redraw()
             self._sync_timers()
 
+    def _can_query_children(self) -> bool:
+        """Whether the panel may still touch its own children.
+
+        Textual sets ``_pruning`` and unmounts the children before it unmounts the
+        panel itself, keeping ``is_mounted`` True meanwhile: a pet answer or a tick
+        landing in that window must bail out rather than query the gone tree. Mount
+        itself is not part of this: the children exist by ``on_mount``, which draws
+        before ``is_mounted`` flips, and callers that can run earlier check it.
+        """
+        return not self._pruning and self.app.is_running
+
     def _redraw(self) -> None:
+        if not self._can_query_children():
+            return
         has_buddy = self.buddy is not None
         self.query_one(".buddy-empty", Static).display = not has_buddy
         for selector in _CONTENT_IDS:
@@ -252,6 +265,8 @@ class BuddyPanel(Widget):
 
     def _on_tick(self) -> None:
         """Advance the idle animation, and end a petting burst that has run its course."""
+        if not self._can_query_children():
+            return
         self._tick_count += 1
         if self.is_petting and monotonic() - self._pet_at >= _PETTING_SECONDS:
             self.is_petting = False
@@ -264,7 +279,7 @@ class BuddyPanel(Widget):
 
     def _animate_shiny(self) -> None:
         """Refresh the badge independently of the slower idle body animation."""
-        if self.buddy is not None and self.buddy.shiny and not self.is_petting:
+        if self._can_query_children() and self.buddy is not None and self.buddy.shiny and not self.is_petting:
             self._render_sprite()
 
     def _render_sprite(self) -> None:
