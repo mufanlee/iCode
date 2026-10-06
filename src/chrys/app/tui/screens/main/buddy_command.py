@@ -25,6 +25,7 @@ _SUBCOMMAND_INFO = msg("tui.buddy.subcommand.info", fallback="Show buddy info")
 _SUBCOMMAND_PET = msg("tui.buddy.subcommand.pet", fallback="Pet your buddy")
 _SUBCOMMAND_MUTE = msg("tui.buddy.subcommand.mute", fallback="Toggle buddy notifications")
 _SUBCOMMAND_NAME = msg("tui.buddy.subcommand.name", fallback="Rename your buddy")
+_SUBCOMMAND_CONFIG = msg("tui.buddy.subcommand.config", fallback="Configure your buddy")
 
 _TOAST_SECONDS = 10
 
@@ -71,10 +72,14 @@ class BuddyCommandController:
             ("pet", self._render_message(_SUBCOMMAND_PET.bind())),
             ("mute", self._render_message(_SUBCOMMAND_MUTE.bind())),
             ("name", self._render_message(_SUBCOMMAND_NAME.bind())),
+            ("config", self._render_message(_SUBCOMMAND_CONFIG.bind())),
         ]
 
     def handle(self, arg: str) -> None:
         """Handle /buddy command text."""
+        if split_command(arg)[0] == "config":
+            self._view.open_buddy_config()
+            return
         if split_command(arg)[0] != "pet":
             self._change(self._carry_out(arg))
         elif not self._pet_in_hand():

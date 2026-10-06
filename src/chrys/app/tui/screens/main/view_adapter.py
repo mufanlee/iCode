@@ -184,6 +184,9 @@ class MainScreenViewAdapter:
             sidebar.focus_tab("tab-buddy")
         sidebar.buddy_panel.reload()
 
+    def open_buddy_config(self) -> None:
+        self._screen.open_buddy_config()
+
     def push_screen(self, screen: object, callback: object | None = None) -> object:
         return _push_screen_untyped(self._screen.app, screen, callback)
 

@@ -363,7 +363,8 @@ _MAN_BUDDY_BODY = msg(
         "        info    - Show how your buddy is doing\n"
         "        pet     - Pet your buddy and hear what it says\n"
         "        mute    - Keep your buddy quiet, or let it speak again\n"
-        "        name    - Give your buddy a new name"
+        "        name    - Give your buddy a new name\n"
+        "        config  - Open the buddy configuration dialog"
     ),
     multiline=True,
 )

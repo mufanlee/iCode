@@ -1,6 +1,6 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
 
-"""Buddy portraits with separate rarity corners and a compact nameplate."""
+"""Buddy portraits and the egg placeholder shown before one hatches."""
 
 from __future__ import annotations
 
@@ -9,7 +9,11 @@ from typing import TYPE_CHECKING
 from rich.text import Text
 
 from chrys.app.features.buddy.model import Rarity
-from chrys.app.features.buddy.pixel_renderer import DEFAULT_BG_RGB
+from chrys.app.features.buddy.pixel_renderer import (
+    DEFAULT_BG_RGB,
+    image_to_half_block_lines,
+    matrix_to_image,
+)
 from chrys.app.features.buddy.pixel_sprites import PIXEL_HEIGHT, PIXEL_WIDTH, render_pixel_sprite
 
 if TYPE_CHECKING:
@@ -26,6 +30,38 @@ RARITY_COLORS: dict[Rarity, str] = {
 PORTRAIT_WIDTH = PIXEL_WIDTH + 4
 PORTRAIT_HEIGHT = PIXEL_HEIGHT // 2 + 3
 SHINY_FPS = 10
+
+# The placeholder drawn before a buddy hatches: a 12x16 pixel egg laid out for
+# the half-block renderer, so it shares the portraits' pixel look and palette.
+EGG_WIDTH = 12
+# The art's terminal rows plus the corner rows that frame it, as on a portrait.
+EGG_HEIGHT = 16 // 2 + 2
+# The egg has no rarity to advertise yet, so its corners stay neutral.
+EGG_FRAME_COLOR = "#808080"
+_EGG_PALETTE: dict[int, tuple[int, int, int, int]] = {
+    0: (0, 0, 0, 0),
+    1: (234, 223, 200, 255),  # Warm cream shell
+    2: (255, 247, 233, 255),  # Sunlit highlight
+    3: (196, 178, 149, 255),  # Shaded shell
+}
+_EGG_FRAME = [
+    "000000000000",
+    "000002200000",
+    "000022220000",
+    "000222233000",
+    "002222113300",
+    "002222113300",
+    "022222111330",
+    "022222111330",
+    "022211111330",
+    "022211111330",
+    "022111111330",
+    "022111111330",
+    "002111111300",
+    "002111113300",
+    "000111133000",
+    "000011330000",
+]
 
 
 def _nameplate(look: Appearance, name: str, width: int, effect_tick: int, bg_rgb: tuple[int, int, int] | None) -> Text:
@@ -74,3 +110,14 @@ def render_portrait(
         top = Text(" " * width)
         bottom = Text(" " * width)
     return [top, *body, bottom, _nameplate(look, name, width, effect_tick, bg_rgb)]
+
+
+def render_egg(*, width: int = EGG_WIDTH, bg_rgb: tuple[int, int, int] | None = DEFAULT_BG_RGB) -> list[Text]:
+    """Render the pre-hatch egg placeholder inside neutral portrait corners."""
+    frame_width = max(EGG_WIDTH + 2, width)
+    body = image_to_half_block_lines(matrix_to_image(_EGG_FRAME, _EGG_PALETTE), bg_rgb=bg_rgb)
+    for line in body:
+        line.align("center", frame_width)
+    top = Text("┌" + " " * (frame_width - 2) + "┐", style=EGG_FRAME_COLOR)
+    bottom = Text("└" + " " * (frame_width - 2) + "┘", style=EGG_FRAME_COLOR)
+    return [top, *body, bottom]

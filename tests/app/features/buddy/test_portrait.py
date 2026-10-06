@@ -12,7 +12,15 @@ from rich.text import Text
 
 from chrys.app.features.buddy.model import Appearance, Rarity, Species
 from chrys.app.features.buddy.pixel_sprites import PIXEL_HEIGHT, PIXEL_WIDTH, render_pixel_sprite
-from chrys.app.features.buddy.portrait import PORTRAIT_HEIGHT, PORTRAIT_WIDTH, RARITY_COLORS, render_portrait
+from chrys.app.features.buddy.portrait import (
+    EGG_HEIGHT,
+    EGG_WIDTH,
+    PORTRAIT_HEIGHT,
+    PORTRAIT_WIDTH,
+    RARITY_COLORS,
+    render_egg,
+    render_portrait,
+)
 
 
 def _look(species: Species = Species.RABBIT) -> Appearance:
@@ -82,7 +90,7 @@ def test_external_artwork_gets_the_same_frame_and_nameplate(tmp_path, monkeypatc
     from PIL import Image
 
     Image.new("RGBA", (16, 10), (210, 30, 80, 255)).save(tmp_path / "rabbit_0.png")
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     portrait = render_portrait(replace(_look(), rarity=Rarity.SSR, shiny=True), "Custom")
     assert portrait[-1].plain.strip() == "Custom [SSR] ✧"
     for row in portrait[1:-2]:
@@ -102,7 +110,7 @@ def test_narrow_custom_art_keeps_canvas_edges_and_vertical_alignment(tmp_path, m
     image = Image.new("RGBA", (20, 16), (*red, 255))
     image.paste((*green, 255), (10, 0, 20, 16))
     image.save(tmp_path / "rabbit_0.png")
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     portrait = render_portrait(_look(), "Custom", width=width, bg_rgb=background)
     assert len(portrait) == PORTRAIT_HEIGHT
     assert all(row.cell_len == width for row in portrait)
@@ -128,3 +136,31 @@ def test_ansi_shiny_sweep_uses_terminal_contrast_without_a_fixed_rgb_highlight()
         assert styles[badge_start + tick].bold and styles[badge_start + tick].reverse
         assert not styles[badge_start + 1 - tick].reverse
         assert styles[badge_start + tick].color == styles[badge_start + 1 - tick].color
+
+
+def test_egg_placeholder_is_framed_like_a_portrait() -> None:
+    lines = render_egg(bg_rgb=None)
+    assert len(lines) == EGG_HEIGHT
+    assert lines[0].plain == "┌" + " " * EGG_WIDTH + "┐"
+    assert lines[-1].plain == "└" + " " * EGG_WIDTH + "┘"
+    assert _styles(lines[0])[0].color is not None
+
+
+def test_egg_placeholder_is_drawn_as_an_egg_shaped_sprite() -> None:
+    art = [line.plain for line in render_egg(bg_rgb=None)[1:-1]]
+    widths = [sum(character != " " for character in line) for line in art]
+    assert widths[0] < widths[1] < max(widths)
+    assert widths[-1] < widths[-2] < max(widths)
+    assert max(widths) == EGG_WIDTH - 2
+
+
+def test_egg_placeholder_centres_instead_of_stretching() -> None:
+    native = render_egg()
+    widened = render_egg(width=40)
+    assert all(line.cell_len == 40 for line in widened)
+    assert widened[0].plain == "┌" + " " * 38 + "┐"
+    assert widened[-1].plain == "└" + " " * 38 + "┘"
+    # The art below keeps its native size: 13 pad + 14 + 13 pad across the 40 columns.
+    for narrow, wide in zip(native[1:-1], widened[1:-1], strict=True):
+        assert narrow.cell_len == EGG_WIDTH + 2
+        assert wide.plain == (" " * 13) + narrow.plain + (" " * 13)

@@ -3943,6 +3943,12 @@ msgstr "返回"
 msgid "tui.binding.break_agent"
 msgstr "中断"
 
+#. English: Buddy
+#. chrys-meta={"fingerprint":"b24977515f388242f6162756260851ee0929d9063bb635c662fc21f76399f966","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/screen.py
+msgid "tui.binding.buddy_config"
+msgstr "伙伴"
+
 #. English: Cancel
 #. chrys-meta={"fingerprint":"ee3eb6e02cd8772be8786b7d714f54bf90abe5d0f0523aebf9c292a1e48c7d3d","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/binding_display.py
@@ -4253,6 +4259,12 @@ msgstr "面对失败的测试从不放弃，再晚也要盯着它。"
 msgid "tui.buddy.save_failed"
 msgstr "伙伴的存档文件无法更新，所以什么都没有改变。请稍后再试。"
 
+#. English: Configure your buddy
+#. chrys-meta={"fingerprint":"3cfaf58a88df8467604ccd0eec05f6ef54aad9e4a77034a7fb4dd5da33766fbb","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_command.py
+msgid "tui.buddy.subcommand.config"
+msgstr "配置你的伙伴"
+
 #. English: Hatch a new buddy
 #. chrys-meta={"fingerprint":"84c569b5b152a20cc55bf1421ecf928d79ca8e1ccbdc2cdff27fef7dc0e87258","multiline":false,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/buddy_command.py
@@ -4322,6 +4334,180 @@ msgstr ""
 "/buddy 不认识“{arg}”。\n"
 "\n"
 "可用：hatch、info、pet、mute、name <新名字>"
+
+#. English: Apply
+#. chrys-meta={"fingerprint":"eb7af8624ec4baf0730a84f5472a6b51f6256ea7b4fed1a5cb29a7956abb664c","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.action.apply"
+msgstr "应用"
+
+#. English: Hatch
+#. chrys-meta={"fingerprint":"70e6ae443af11e40a421e70bfdfb15615133eeb995a6001a31dd224ebdf7af87","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/profile.py
+msgid "tui.buddy_config.action.hatch"
+msgstr "孵蛋"
+
+#. English: Import
+#. chrys-meta={"fingerprint":"1e974c8a0fc93af4325ba12ec3143785d96e73d9b34f087a10937a3eed3f5d48","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.import"
+msgstr "导入"
+
+#. English: Open folder
+#. chrys-meta={"fingerprint":"c1ed71e74a8fee72d035f7f727db12cc77290c91452ddd09e24eb6f9397e97bd","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.open_folder"
+msgstr "打开文件夹"
+
+#. English: Remove
+#. chrys-meta={"fingerprint":"5ab83d83e77d1fd96ebcc0b0ecc9ce26afa1a54d844f2763f4d3e8f8a8903075","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.action.remove"
+msgstr "移除"
+
+#. English: Files are <species>_<frame>.png; leaving one out uses the built-in
+#. art for that frame.
+#. chrys-meta={"fingerprint":"9c05d3a7472a840aca6ad3ac9c50e03248cd4b25c1e16aed0d647c110daa8637","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.hint"
+msgstr "文件名为 <species>_<frame>.png；缺少某帧则用该帧的内置图。"
+
+#. English: Select frame artwork
+#. chrys-meta={"fingerprint":"8ac8e871c1054b225ad535aacd477e5087154131036e2b64a421fcf0839ee9da","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.picker.title"
+msgstr "选择这帧的贴图"
+
+#. English: Preview
+#. chrys-meta={"fingerprint":"fe3d86ca21abdfd7b8cef357d4c202750c1dc0e6d6428a503651683b402e1899","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.preview"
+msgstr "预览"
+
+#. English: Built-in
+#. chrys-meta={"fingerprint":"33a7ee1778e089e2f37f6c99829a838bb2c635dd8dd30240530b59503dad2c53","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.state.builtin"
+msgstr "内置"
+
+#. English: Custom
+#. chrys-meta={"fingerprint":"740289892645f7695e159658ae8703cc871efb15fe7248b5137e0e2ead9297f0","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.appearance.state.custom"
+msgstr "自定义"
+
+#. English: Nothing has hatched yet.  /buddy hatch finds out what is in the
+#. egg.
+#. chrys-meta={"fingerprint":"e7cb44c007cf6884e1014c51489542610b6f2e7a6af4c5b6e5d4a14d788a23a7","multiline":true,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/profile.py
+msgid "tui.buddy_config.empty.hint"
+msgstr ""
+"还没有伙伴。\n"
+"\n"
+"用 /buddy hatch 看看蛋里是什么。"
+
+#. English: Muted
+#. chrys-meta={"fingerprint":"3a2bdb64c123eef4546342112fef5fe8ddceb2fa214b34727865e0ee56bb2a8a","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.muted"
+msgstr "静音"
+
+#. English: Name
+#. chrys-meta={"fingerprint":"4cb17b0cbe6b5b3b3f48eebe53381b8dff2453283d21d5ccbd53233b9dda31f6","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.name"
+msgstr "名称"
+
+#. English: Reply model
+#. chrys-meta={"fingerprint":"a7f9276693e6c7fec4d297daf50bff992fd181dffb32770316b747a9c30aceb4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.field.reply_model"
+msgstr "回复模型"
+
+#. English: Opening the buddy assets folder is not available in the current
+#. environment.
+#. chrys-meta={"fingerprint":"80e06c5c82f681b6d4b62bccd555537cff085460c81cc10230bfbb7b56cb6fd7","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/screen.py
+msgid "tui.buddy_config.open_assets.unavailable"
+msgstr "当前环境无法打开伙伴贴图文件夹。"
+
+#. English: Follow the active model
+#. chrys-meta={"fingerprint":"1777275085f3e51b4387c9ed60bdca4c6a93059198d9097d85ad22ad23042056","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.reply_model.follow"
+msgstr "跟随当前模型"
+
+#. English: Behaviour
+#. chrys-meta={"fingerprint":"908bd18c181d68f03346c225df4559a8d69b83e99e837cb56bb24d6b693079a4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.section.behaviour"
+msgstr "行为"
+
+#. English: Frames
+#. chrys-meta={"fingerprint":"0bdc2f448b68ed7de983de059cdc584ce24c28e96d1c9e69c90bbd5f14e88b3f","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/appearance.py
+msgid "tui.buddy_config.section.frames"
+msgstr "帧"
+
+#. English: Identity
+#. chrys-meta={"fingerprint":"5c26ad176c4a211dd971424966101b8fac042a919cedf0d82712b5ca1bbd9db3","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.section.identity"
+msgstr "身份"
+
+#. English: Changes are saved as you make them
+#. chrys-meta={"fingerprint":"51d79d4fb0b587f91eb9bbae27b0b823c1b91ea7aff3275a12f9515eafe41090","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.status.autosave"
+msgstr "改动即时保存"
+
+#. English: Appearance
+#. chrys-meta={"fingerprint":"f27f06141e84ba97371cbfa818b90267fdf44d812a0dcca5c3bed034eccf4d8a","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.appearance"
+msgstr "外观"
+
+#. English: Profile
+#. chrys-meta={"fingerprint":"1f32e5bec5d54398a6c913fbd43a7560087c02343db62f7787dcff3926ae39c4","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.profile"
+msgstr "档案"
+
+#. English: Settings
+#. chrys-meta={"fingerprint":"794bd89198036b3c90e32bf50e53ce88b6a35addcd9b6f537e1d1fb9a161d83e","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.tab.settings"
+msgstr "设置"
+
+#. English: Buddy
+#. chrys-meta={"fingerprint":"b24977515f388242f6162756260851ee0929d9063bb635c662fc21f76399f966","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/dialog.py
+msgid "tui.buddy_config.title"
+msgstr "伙伴"
+
+#. English: Buddy artwork could not be installed
+#. chrys-meta={"fingerprint":"73a81f273a86ef701c631554933ff1ee53d93ac53f26254f3f4b143f6e32d56c","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.install_failed"
+msgstr "无法安装伙伴贴图。"
+
+#. English: A name has to be at least one visible character.
+#. chrys-meta={"fingerprint":"9a4d0df4a626e6ea297e8c98cc4faf2cea8ae1b39693205548cf6c1ab35c507d","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/buddy_config/panes/settings.py
+msgid "tui.buddy_config.toast.name_empty"
+msgstr "名字至少要有一个可见字符。"
+
+#. English: Buddy artwork could not be removed
+#. chrys-meta={"fingerprint":"97effe7b9d6ee647539e2c3857af671afb37907363db743f450741d650f8feee","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.remove_failed"
+msgstr "无法移除伙伴贴图。"
+
+#. English: Buddy save file could not be updated
+#. chrys-meta={"fingerprint":"c74fabfd7388909c9b1d8ec2d7e60446a99b9d67fea46605091076e4b264eea7","multiline":false,"placeholders":[]}
+#: src/chrys/app/tui/screens/main/buddy_config_coordinator.py
+msgid "tui.buddy_config.toast.save_failed"
+msgstr "无法更新伙伴存档。"
 
 #. English: Agent
 #. chrys-meta={"fingerprint":"776d9c6caf787f533a3dc88dd3977c72f4d683a010e52a6787a377fe58bc5f51","multiline":false,"placeholders":[]}
@@ -6266,8 +6452,9 @@ msgstr "使用 Tab 补全可直接切换到指定模式。"
 #. hatch   - Hatch your buddy (there is only ever one)         info    - Show
 #. how your buddy is doing         pet     - Pet your buddy and hear what it
 #. says         mute    - Keep your buddy quiet, or let it speak again
-#. name    - Give your buddy a new name
-#. chrys-meta={"fingerprint":"cbf50a2d854deff68272ffbbdf15e60b751ca65dbdfa2edd0a7e70274f946bb3","multiline":true,"placeholders":[]}
+#. name    - Give your buddy a new name         config  - Open the buddy
+#. configuration dialog
+#. chrys-meta={"fingerprint":"df283c90d0cf6e42ce9bb939794b4c155f641a6301c10496285d71a2d500d21e","multiline":true,"placeholders":[]}
 #: src/chrys/app/tui/screens/main/commands.py
 msgid "tui.man.buddy.body"
 msgstr ""
@@ -6278,7 +6465,8 @@ msgstr ""
 "        info    - 查看伙伴的近况\n"
 "        pet     - 摸摸伙伴，听听它说什么\n"
 "        mute    - 让伙伴保持安静，或让它重新开口\n"
-"        name    - 给伙伴起个新名字"
+"        name    - 给伙伴起个新名字\n"
+"        config  - 打开伙伴配置对话框"
 
 #. English: Change the current working directory for the {app} session.
 #. Subsequent file operations and AI context will use the new directory as the
@@ -13844,6 +14032,15 @@ msgstr "提示已被钩子阻止。"
 #~ msgid "tui.buddy.thinking_sounds"
 #~ msgstr "💭 *{name} 发出思考的声音*..."
 
+#~ msgid "tui.buddy_config.action.close"
+#~ msgstr "关闭"
+
+#~ msgid "tui.buddy_config.action.rehatch"
+#~ msgstr "重新孵化"
+
+#~ msgid "tui.buddy_config.rehatch.confirm"
+#~ msgstr "重新孵化会用一次全新的随机抽取替换你的伙伴。其物种、稀有度、特质和进度都无法恢复。"
+
 #~ msgid "tui.chat.copy_agent_response_button"
 #~ msgstr "复制"
 
@@ -13913,6 +14110,9 @@ msgstr "提示已被钩子阻止。"
 
 #~ msgid "tui.settings.section.web_search"
 #~ msgstr "网络搜索"
+
+#~ msgid "tui.sidebar.buddy.configure"
+#~ msgstr "配置"
 
 #~ msgid "tui.sidebar.buddy.personality"
 #~ msgstr "性格：{personality}"

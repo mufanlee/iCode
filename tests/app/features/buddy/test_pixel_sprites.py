@@ -106,7 +106,7 @@ def test_external_artwork_is_decoded_once_and_returns_independent_frames(tmp_pat
     metadata = PngInfo()
     metadata.add_text("comment", "source metadata " * 1000)
     Image.new("RGBA", (1024, 1024), (20, 40, 60, 255)).save(path, pnginfo=metadata)
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     with patch("chrys.app.features.buddy.pixel_sprites.Image.open", autospec=True, side_effect=Image.open) as opened:
         first = build_pixel_frame(Species.RABBIT)
         assert first.size == (PIXEL_WIDTH, PIXEL_HEIGHT)
@@ -122,7 +122,7 @@ def test_external_artwork_cache_tracks_same_size_edits(tmp_path, monkeypatch) ->
     path = tmp_path / "rabbit_0.png"
     Image.new("RGBA", (16, 10), (20, 40, 60, 255)).save(path, compress_level=0)
     before = path.stat()
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     assert build_pixel_frame(Species.RABBIT).getpixel((0, 0)) == (20, 40, 60, 255)
     Image.new("RGBA", (16, 10), (80, 100, 120, 255)).save(path, compress_level=0)
     assert path.stat().st_size == before.st_size
@@ -132,7 +132,7 @@ def test_external_artwork_cache_tracks_same_size_edits(tmp_path, monkeypatch) ->
 
 def test_external_artwork_recovers_after_missing_invalid_and_removed_files(tmp_path, monkeypatch) -> None:
     path = tmp_path / "rabbit_0.png"
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     assert load_external_pixel_frame(Species.RABBIT, 0) is None
     path.write_bytes(b"not a png")
     assert load_external_pixel_frame(Species.RABBIT, 0) is None
@@ -145,7 +145,7 @@ def test_external_artwork_recovers_after_missing_invalid_and_removed_files(tmp_p
 def test_external_artwork_retries_transient_read_errors_without_a_file_edit(tmp_path, monkeypatch) -> None:
     path = tmp_path / "rabbit_0.png"
     Image.new("RGBA", (16, 10), (20, 40, 60, 255)).save(path)
-    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites._get_assets_dir", lambda: tmp_path)
+    monkeypatch.setattr("chrys.app.features.buddy.pixel_sprites.assets_dir", lambda: tmp_path)
     original_open = Image.open
     attempts = 0
 

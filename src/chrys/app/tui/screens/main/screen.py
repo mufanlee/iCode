@@ -48,7 +48,7 @@ from chrys.app.tui.screens.main.model_indicator import (
     is_model_selection_locked,
 )
 from chrys.app.tui.screens.main.navigation import MainNavigationController
-from chrys.app.tui.screens.main.ports import StatusMessage
+from chrys.app.tui.screens.main.ports import NotificationSeverity, StatusMessage
 from chrys.app.tui.screens.main.rollback_controller import RollbackController
 from chrys.app.tui.screens.main.runtime_info import RegistryRuntimeInfoProvider
 from chrys.app.tui.screens.main.session_handlers import SessionCallbacks, SessionHandler
@@ -141,6 +141,8 @@ from chrys.service.profiles.models.schema import UNCONFIGURED_MODEL_ID, is_model
 from chrys.service.session.sub_agent_transcript import load_persisted_sub_agent_transcript
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from textual.app import ComposeResult
     from textual.theme import Theme
 
@@ -148,6 +150,7 @@ if TYPE_CHECKING:
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.notifications import NotificationService
     from chrys.app.tui.notifications.settings import NotificationSettings
+    from chrys.app.tui.screens.main.buddy_config_coordinator import BuddyConfigCoordinator
     from chrys.app.tui.screens.sessions import WorkflowSessionPick
     from chrys.app.tui.screens.themes.picker import ThemesScreen
     from chrys.app.tui.themes.store import ThemeFileRevision, UserThemeStore
@@ -166,6 +169,7 @@ _SESSIONS_BINDING = msg("tui.binding.sessions", fallback="Sessions")
 _AGENTS_BINDING = msg("tui.binding.agents", fallback="Agents")
 _MODELS_BINDING = msg("tui.binding.models", fallback="Models")
 _LOGS_BINDING = msg("tui.binding.logs", fallback="Logs")
+_BUDDY_CONFIG_BINDING = msg("tui.binding.buddy_config", fallback="Buddy")
 _HELP_BINDING = msg("tui.binding.help", fallback="Help")
 _SIDEBAR_BINDING = msg("tui.binding.sidebar", fallback="Sidebar")
 _THEMES_BINDING = msg("tui.binding.themes", fallback="Themes")
@@ -193,6 +197,10 @@ _MODEL_UNCONFIGURED_MESSAGE = msg(
     fallback="Your message was not sent. Configure and select a model to get started.",
 )
 _MODEL_UNCONFIGURED_SETUP = msg("tui.model_guard.button.setup", fallback="Set up model")
+_BUDDY_ASSETS_OPEN_UNAVAILABLE = msg(
+    "tui.buddy_config.open_assets.unavailable",
+    fallback="Opening the buddy assets folder is not available in the current environment.",
+)
 
 _TERMINAL_TITLE_ACTIVITY_INTERVAL_SECONDS = 0.65
 _TERMINAL_TITLE_RUNNING_FRAMES = ("◇", "◈", "◆", "◈")
@@ -215,6 +223,7 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         localized_binding("f2", "agents_config", _AGENTS_BINDING, priority=True),
         localized_binding("f4", "models_config", _MODELS_BINDING, priority=True),
         localized_binding("f6", "show_log_viewer", _LOGS_BINDING, priority=True),
+        localized_binding("f7", "buddy_config", _BUDDY_CONFIG_BINDING, priority=True),
         localized_binding("f8", "open_guide", _HELP_BINDING, priority=True),
         Binding("ctrl+r", "prompt_history", show=False, priority=True),
         localized_binding("f9", "pick_theme", _THEMES_BINDING, priority=True),
@@ -392,6 +401,7 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
                 debug=self._debug,
                 notification_service=self._notification_service,
                 settings_coordinator=self._settings_coordinator,
+                buddy_config_coordinator=self._buddy_config_coordinator,
             ),
             profile_descriptions=self._runtime_info,
             locale_controller=self._locale_controller,
@@ -630,6 +640,72 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
             coordinator = self._new_settings_coordinator()
             self.__dict__["_settings_coordinator_instance"] = coordinator
         return coordinator
+
+    def _buddy_config_coordinator(self) -> BuddyConfigCoordinator:
+        """The buddy-config dialog's adapter, built on first use.
+
+        Lazy like the settings coordinator: most sessions never open the
+        dialog, and the adapter owns nothing until it does.
+        """
+        from chrys.app.tui.screens.main.buddy_config_coordinator import (
+            BuddyConfigCallbacks,
+            BuddyConfigCoordinator,
+        )
+
+        coordinator = self.__dict__.get("_buddy_config_coordinator_instance")
+        if not isinstance(coordinator, BuddyConfigCoordinator):
+            coordinator = BuddyConfigCoordinator(
+                BuddyConfigCallbacks(
+                    save_settings=self._settings_persistence().persist_patch,
+                    notify=self._notify_buddy_config,
+                    settings=lambda: cast("ChrysApp", self.app).settings_handle.settings,
+                    model_options=self._buddy_model_options,
+                    open_path=self._open_path_in_os,
+                )
+            )
+            self.__dict__["_buddy_config_coordinator_instance"] = coordinator
+        return coordinator
+
+    def _notify_buddy_config(
+        self, message: StatusMessage, *, severity: NotificationSeverity = "information", timeout: float = 10
+    ) -> None:
+        """Toast a coordinator message; a ``MessageRef`` is rendered before notifying."""
+        text = message if isinstance(message, str) else render_str(self._language_localizer(), message)
+        self.notify(text, severity=severity, timeout=timeout, markup=False)
+
+    def _buddy_model_options(self) -> list[tuple[str, str]]:
+        """The reply-model picker's options: follow the active model, then every model id.
+
+        The blank "follow" entry carries an empty label: the pane owns its text.
+        A configured id the registry no longer offers is appended so the user
+        sees the model they actually set rather than a silent fall back to
+        follow, mirroring the settings dialog's ``_options_with``.
+        """
+        options: list[tuple[str, str]] = [("", "")]
+        registry = self._services.model_registry
+        model_ids: list[str] = []
+        if registry is not None:
+            model_ids = list(
+                dict.fromkeys(profile.model_id for profile in registry.list_profiles() if profile.model_id)
+            )
+            options.extend((model_id, model_id) for model_id in model_ids)
+        current = cast("ChrysApp", self.app).settings_handle.settings.buddy_model
+        if current and current not in model_ids:
+            options.append((current, current))
+        return options
+
+    def _open_path_in_os(self, path: Path) -> None:
+        """Reveal *path* in the desktop file manager, when one is reachable."""
+        from chrys.app.tui.support.file_manager import can_open_in_file_manager, open_in_file_manager
+
+        if not can_open_in_file_manager():
+            self.notify(
+                render_str(self._language_localizer(), _BUDDY_ASSETS_OPEN_UNAVAILABLE.bind()),
+                severity="warning",
+                markup=False,
+            )
+            return
+        open_in_file_manager(path)
 
     def _switch_locale_for_panel(self, requested_locale: str) -> None:
         """The panel's locale row goes through the same action as the picker and
@@ -2194,6 +2270,10 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
         """Open the Settings dialog (F10)."""
         self._open_settings()
 
+    def action_buddy_config(self) -> None:
+        """Open the Buddy configuration dialog (F7)."""
+        self.open_buddy_config()
+
     def action_runtime_details(self) -> None:
         """Open the active runtime details modal."""
         self._config_actions.open_runtime_details()
@@ -2201,6 +2281,10 @@ class MainScreen(RightClickScreenCopyMixin, Screen):
     def _open_settings(self, initial_tab: str = GENERAL_TAB_ID) -> None:
         """Open the Settings dialog at *initial_tab*."""
         self._config_actions.open_settings(initial_tab)
+
+    def open_buddy_config(self) -> None:
+        """Open the Buddy configuration dialog."""
+        self._config_actions.open_buddy_config()
 
     def _schedule_notification_settings_save(self, settings: NotificationSettings) -> None:
         """Record the live choice, then persist it after a short debounce."""

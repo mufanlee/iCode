@@ -1,0 +1,195 @@
+BuddyConfigDialog {
+    align: center middle;
+    background: $background 40%;
+}
+
+/* Same breathing room as the Settings dialog: a near-full-width box with the
+   height capped so a taller terminal only grows the margins. The border, its
+   title and its subtitle live here, as on the other dialogs; it holds only the
+   tabbed content (the dialog is dismissed with Esc or a click outside). */
+#buddy-config-container {
+    width: 92%;
+    max-width: 92;
+    height: 85%;
+    max-height: 48;
+    border: round $tui-border-primary $border-opacity;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $surface;
+    padding: 0;
+    border-subtitle-color: $text-muted;
+}
+
+#buddy-config-tabs {
+    height: 1fr;
+}
+
+#buddy-config-tabs ContentSwitcher {
+    height: 1fr;
+}
+
+#buddy-config-tabs TabPane {
+    height: 1fr;
+    padding: 0;
+}
+
+/* No right padding: Textual draws the scrollbar inside the padding box, and
+   the bar belongs flush with the frame; the sections keep the gap via margin. */
+.buddy-config-pane-scroll {
+    width: 100%;
+    height: 1fr;
+    padding: 0 0 0 1;
+    scrollbar-size: 1 1;
+    /* Rows must not shift sideways when a tab starts or stops overflowing. */
+    scrollbar-gutter: stable;
+}
+
+/* Each section is a bordered group named by its title; a blank line follows
+   the title, rows sit one line apart, and the last row's margin keeps the
+   bottom border off the content. Sections sit one line apart. */
+#buddy-config-container .buddy-config-section {
+    width: 100%;
+    height: auto;
+    border: round $tui-border-foreground 15%;
+    border-title-color: $secondary;
+    border-title-style: bold;
+    padding: 1 1 0 2;
+    margin: 1 1 0 0;
+}
+
+#buddy-config-container .buddy-config-row {
+    width: 100%;
+    height: auto;
+    margin: 0 0 1 0;
+}
+
+#buddy-config-container .buddy-config-row-main {
+    width: 100%;
+    height: auto;
+    min-height: 1;
+}
+
+#buddy-config-container .buddy-config-row-label {
+    width: 32;
+    height: 1;
+    padding: 0 1 0 0;
+    content-align: left middle;
+}
+
+/* A checkbox carries its own label, as the settings BoolRow does. */
+#buddy-config-container .buddy-config-row-checkbox {
+    height: 1;
+    padding: 0;
+    border: none;
+    background: transparent;
+    margin: 0;
+    width: auto;
+}
+
+#buddy-config-container .buddy-config-row-checkbox:focus {
+    border: none;
+    background: transparent;
+}
+
+#buddy-config-container .buddy-config-row-checkbox:focus > .toggle--label {
+    color: $text;
+    background: transparent;
+    text-style: none;
+}
+
+#buddy-config-container .buddy-config-row-checkbox > .toggle--button {
+    color: $foreground 35%;
+    background: $foreground 6%;
+}
+
+#buddy-config-container .buddy-config-row-checkbox.-on > .toggle--button {
+    color: $success;
+    background: $foreground 6%;
+}
+
+#buddy-config-container .buddy-config-row-hint {
+    width: 100%;
+    height: auto;
+    color: $text-muted;
+}
+
+/* Compact controls, as in the model profile editor: one line, no frame. */
+#buddy-config-container EnhancedInput {
+    width: 1fr;
+    max-width: 44;
+    height: 1;
+    border: none;
+    background: $foreground 8%;
+    padding: 0 1;
+    margin: 0;
+}
+
+#buddy-config-container EnhancedInput:focus {
+    border: none;
+    background: $foreground 12%;
+}
+
+#buddy-config-container Select {
+    width: 1fr;
+    max-width: 44;
+    height: auto;
+    margin: 0;
+}
+
+#buddy-config-container SelectCurrent {
+    height: 1;
+    border: none;
+    background: $foreground 8%;
+    padding: 0 1;
+}
+
+#buddy-config-container Select:focus > SelectCurrent {
+    border: none;
+    background: $foreground 12%;
+}
+
+#buddy-config-container SelectOverlay {
+    height: auto;
+    max-height: 16;
+    padding: 0 0 0 1;
+    border: round $tui-border-primary $border-opacity;
+    background: $surface;
+}
+
+/* Link-style in-row actions ("Apply", "Import", "Remove", "Open folder"):
+   the theme's flat default buttons assume a coloured background, so give
+   these their own ink. Scoped by container id so the rule outranks the
+   theme's flat-button ink. */
+#buddy-config-container Button.buddy-config-link {
+    height: 1;
+    min-width: 6;
+    margin: 0 0 0 1;
+    padding: 0 1;
+    border: none;
+    background: $primary 20%;
+    color: $primary;
+    text-style: none;
+}
+
+#buddy-config-container Button.buddy-config-link:hover,
+#buddy-config-container Button.buddy-config-link:focus {
+    background: $primary 40%;
+    text-style: none;
+}
+
+#buddy-config-container Button.buddy-config-link.-danger {
+    background: $error 20%;
+    color: $error;
+}
+
+#buddy-config-container Button.buddy-config-link:disabled {
+    background: transparent;
+    border: none;
+    color: $text-muted;
+}
+
+/* The Profile tab's hatch button sits alone in a centred row: the link class's
+   left margin would nudge it off-centre, so drop it there. */
+#buddy-config-container ProfilePane #buddy-config-hatch {
+    margin: 0;
+}

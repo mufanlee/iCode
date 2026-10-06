@@ -1547,3 +1547,71 @@ Performance and guards appear in Tasks 10 and 13. All covered.
 `render_portrait` keyword args (`widgets/sidebar/buddy.py`), the settings-persistence accessor name in
 `screen.py`, `Switch` availability in the pinned Textual, and `_open_path_in_os` (may need a small platform helper
 in `foundation/platform/`). If any of these differ, adjust the call site — the interfaces above do not change.
+
+---
+
+## Implementation notes / deviations from the plan
+
+The shipped code follows the plan's design but differs from its literal snippets in
+these ways:
+
+- `frame_state` is decided by `pixel_sprites.load_external_pixel_frame(species, frame) is not None`
+  (the frame is "present **and** loads"), not by `assets.is_custom_frame`. This matches the
+  renderer's silent fallback: an unreadable or undecodable file reads as `BUILTIN`.
+- The ports gained `hatch()` (the empty state's inline hatch), and `BuddyConfigCallbacks`
+  has no `push_screen` field.
+- The Appearance pane's remove method is `remove_frame`, not `remove` (it must not shadow
+  `Widget.remove`).
+- The Appearance pane gained a selected-frame preview, and each frame row is a `Horizontal`
+  (so the state label and the Import/Remove buttons sit on one line).
+- The dialog is 32 rows tall and the Appearance pane scrolls its preview plus six rows.
+- `_render_message(reference)` (localizer-or-fallback, rendered via `render_str`) replaced
+  the plan's `_t(controller, ref)` calls.
+- The re-hatch footer button is hidden (`display`) rather than disabled while no buddy
+  exists, matching the design; an inline hatch reveals it and appends the Appearance and
+  Settings tabs (`TabbedContent.add_pane`), without recomposing the dialog.
+- The Profile pane's empty state also renders the egg and an inline Hatch button that
+  calls `ports.hatch()`.
+- The dialog is framed and centered like the other dialogs: a single `#buddy-config-container`
+  (`VerticalGroup`) hosts the tabs and a shared `DialogButtonRow`/`DialogButtonSpec`, and the
+  autosave status is the container's border subtitle rather than a footer widget.
+- In-content buttons use `flat=True` with a variant (primary/error/warning), so the dialog
+  chrome does not read as a stack of raised buttons.
+- The buddy entry point is the footer's F7 **Buddy** binding (`localized_binding("f7",
+  "buddy_config", …)` → `action_buddy_config`), not the in-panel **Configure** button the plan
+  described; that sidebar button and its `ConfigRequested` message were removed.
+- A later "settings-parity" restyle reworked the chrome to match the Settings dialog; it
+  supersedes the flat-button note above:
+  - `#buddy-config-container` is responsive — `width: 92%; max-width: 92; height: 85%;
+    max-height: 48` — not the fixed 32-row box the plan described, and its autosave-status
+    border subtitle is drawn muted (`border-subtitle-color: $text-muted`).
+  - Each tab's body is a `VerticalScroll` (`.buddy-config-pane-scroll`, Settings-like
+    padding); content is grouped in bordered `.buddy-config-section` boxes with `$secondary`
+    titles, and each setting is a Settings-style row (fixed-width label + control).
+  - The panes use the shared `EnhancedInput`/`Select`/`Checkbox` widgets rather than the bare
+    Textual `Input`; in-row actions (`Apply`, `Import`, `Remove`, `Open folder`) are
+    link-style `.buddy-config-link` buttons, not the earlier `flat=True` variant buttons.
+  - The Muted control is a `Checkbox` (carrying its own label), not a `Switch`; the
+    `#buddy-config-muted-label` and `#buddy-config-frame-preview-label` widget ids were
+    removed in the process.
+  - Three new section-title ids were added: `tui.buddy_config.section.identity` ("Identity"),
+    `tui.buddy_config.section.behaviour` ("Behaviour") and `tui.buddy_config.section.frames`
+    ("Frames").
+
+- A later change removed the re-hatch flow from the dialog entirely (this supersedes the
+  hidden-re-hatch-button note above):
+  - The bottom action row holds only **Close**; the **Re-hatch** error button and the
+    `ConfirmDialog` (`screens/dialogs/confirm.py`) it pushed are gone.
+  - `BuddyConfigPorts.rehatch` and the coordinator's `rehatch` method were removed.
+  - The retired message ids `tui.buddy_config.action.rehatch` and
+    `tui.buddy_config.rehatch.confirm` were dropped from the catalogs and the buddy oracle
+    id set.
+  - `actions.rehatch()` is kept as a feature-layer action; it is simply no longer reachable
+    from the dialog.
+
+- A later change removed the Close button and its `DialogButtonRow` (this supersedes the
+  "bottom action row holds only **Close**" note above):
+  - Dismissal is now Esc (a priority binding) or a click outside the dialog, like the Settings
+    dialog; `#buddy-config-container` holds only the `TabbedContent`.
+  - The retired message id `tui.buddy_config.action.close` was dropped from the catalogs and
+    the buddy oracle id set.

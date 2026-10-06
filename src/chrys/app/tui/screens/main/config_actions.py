@@ -38,6 +38,7 @@ _CONFIGURATION_UPDATED = msg("tui.config.updated", fallback="Configuration updat
 if TYPE_CHECKING:
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.notifications import NotificationService
+    from chrys.app.tui.screens.main.buddy_config_coordinator import BuddyConfigCoordinator
     from chrys.app.tui.screens.main.ports import ProfileDescriptionProvider, RuntimeConfigView
     from chrys.app.tui.screens.main.settings_coordinator import SettingsCoordinator
     from chrys.service.profiles.models.registry import ModelProfileRegistry
@@ -56,6 +57,7 @@ class RuntimeConfigCallbacks:
     debug: Callable[[str, str], None]
     notification_service: Callable[[], NotificationService]
     settings_coordinator: Callable[[], SettingsCoordinator]
+    buddy_config_coordinator: Callable[[], BuddyConfigCoordinator]
 
 
 def resolve_approval_mode(arg: str, current: ApprovalMode) -> ApprovalMode:
@@ -312,6 +314,14 @@ class RuntimeConfigController:
         coordinator.attach_dialog(dialog)
         self._view.push_screen(dialog)
         self._callbacks.debug("Settings", f"opened {initial_tab}")
+
+    def open_buddy_config(self) -> None:
+        """Open the Buddy configuration dialog."""
+        from chrys.app.tui.screens.buddy_config import BuddyConfigDialog
+
+        coordinator = self._callbacks.buddy_config_coordinator()
+        dialog = BuddyConfigDialog(coordinator, locale_controller=self._locale_controller)
+        self._view.push_screen(dialog)
 
     def open_agent_config(self) -> None:
         """Open the unified agent configuration modal."""

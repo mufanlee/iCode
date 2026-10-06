@@ -109,6 +109,10 @@ def _settings_coordinator() -> object:
     return object()
 
 
+def _buddy_config_coordinator() -> object:
+    return object()
+
+
 def _callbacks() -> RuntimeConfigCallbacks:
     return RuntimeConfigCallbacks(
         set_approval_mode=lambda _arg: None,
@@ -120,6 +124,7 @@ def _callbacks() -> RuntimeConfigCallbacks:
         debug=lambda _key, _message="": None,
         notification_service=_notification_service,
         settings_coordinator=_settings_coordinator,
+        buddy_config_coordinator=_buddy_config_coordinator,
     )
 
 

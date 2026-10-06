@@ -1,0 +1,44 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
+
+"""Ports the Buddy configuration dialog talks through; the main screen implements them."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from chrys.app.features.buddy.model import Buddy
+    from chrys.foundation.i18n import MessageRef
+
+
+class FrameState(StrEnum):
+    """Whether one frame renders from custom artwork or the built-in sprite."""
+
+    BUILTIN = "builtin"
+    CUSTOM = "custom"
+
+
+class BuddyConfigPorts(Protocol):
+    """Everything the buddy-configuration dialog may ask of the screen."""
+
+    def buddy(self) -> Buddy | None: ...
+    def frame_state(self, frame: int) -> FrameState: ...
+
+    # Edits: each one commits immediately; OSError surfaces as a warning toast.
+    async def rename(self, name: str) -> None: ...
+    async def set_muted(self, muted: bool) -> None: ...
+    async def set_reply_model(self, model_id: str) -> None: ...
+    async def hatch(self) -> None: ...
+    async def import_frame(self, frame: int, source: Path) -> None: ...
+    async def remove_frame(self, frame: int) -> None: ...
+
+    # Reply-model field.
+    def reply_model(self) -> str: ...
+    def model_options(self) -> list[tuple[str, str]]: ...
+
+    # Chrome.
+    def open_assets_dir(self) -> None: ...
+    def notify(self, message: MessageRef | str, *, severity: str, timeout: float) -> None: ...
