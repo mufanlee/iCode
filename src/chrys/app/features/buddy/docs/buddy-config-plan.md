@@ -1608,3 +1608,10 @@ these ways:
     id set.
   - `actions.rehatch()` is kept as a feature-layer action; it is simply no longer reachable
     from the dialog.
+
+- A later change removed the Close button and its `DialogButtonRow` (this supersedes the
+  "bottom action row holds only **Close**" note above):
+  - Dismissal is now Esc (a priority binding) or a click outside the dialog, like the Settings
+    dialog; `#buddy-config-container` holds only the `TabbedContent`.
+  - The retired message id `tui.buddy_config.action.close` was dropped from the catalogs and
+    the buddy oracle id set.

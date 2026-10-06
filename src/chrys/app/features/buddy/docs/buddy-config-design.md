@@ -50,7 +50,7 @@ A new dialog package, mirroring `screens/settings/`:
 ```
 app/tui/screens/buddy_config/
 ├── __init__.py          # exports BuddyConfigDialog
-├── dialog.py            # BuddyConfigDialog(BaseDialog[None]): tabs + docked button row
+├── dialog.py            # BuddyConfigDialog(BaseDialog[None]): the tabbed modal
 ├── dialog.tcss          # layout and styling
 ├── ports.py             # BuddyConfigPorts protocol + FrameState
 └── panes/
@@ -142,10 +142,11 @@ the dialog is open is not pushed into it; reopening shows it. This is accepted
 
 ## UI / UX
 
-`BuddyConfigDialog` is a `BaseDialog[None]` (modal, escape closes) framed and
-centered like the other dialogs: one bordered `#buddy-config-container`
-(`VerticalGroup`), responsive at `width: 92%; max-width: 92; height: 85%;
-max-height: 48`, hosts a `TabbedContent` and a docked `DialogButtonRow`. The
+`BuddyConfigDialog` is a `BaseDialog[None]` (modal, dismissed with Esc — a
+priority binding — or a click outside the dialog) framed and centered like the
+other dialogs: one bordered `#buddy-config-container` (`VerticalGroup`),
+responsive at `width: 92%; max-width: 92; height: 85%; max-height: 48`, whose
+only child is the `TabbedContent` — there is no button row. The
 title is the container's border title and the autosave status ("Changes are
 saved as you make them") is its border subtitle in a muted
 (`border-subtitle-color: $text-muted`) ink — not a footer widget. Each tab pane
@@ -154,8 +155,7 @@ dialog's padding, so an overflowing tab scrolls its own body. Content is grouped
 in bordered `.buddy-config-section` boxes with `$secondary` titles, and each
 setting is a Settings-style row: a fixed-width label plus the compact, frameless
 `EnhancedInput`/`Select`/`Checkbox`. In-row actions (`Apply`, `Import`,
-`Remove`, `Open folder`) are link-style `.buddy-config-link` buttons; the docked
-button row keeps the theme's variant buttons.
+`Remove`, `Open folder`) are link-style `.buddy-config-link` buttons.
 
 - **Profile** — live animated portrait on the left; read-only fields on the
   right: name, species, rarity (with evolution stage), shiny, the four traits
@@ -176,9 +176,6 @@ button row keeps the theme's variant buttons.
   retranslate on a live locale switch: resetting its options would re-post
   `Changed` and write the value back through the ports. A documented residual,
   not an API limit.
-- **Button row** — a shared `DialogButtonRow` docked inside the container: a
-  single `[Close]` (warning variant). The autosave status is the container's
-  border subtitle.
 - **Empty state** — with no buddy, the Profile tab shows the egg and a hint
   with an inline hatch button (calling `actions.hatch()`); the Appearance tab is
   hidden and not selectable.
@@ -220,7 +217,8 @@ Reusing the existing buddy test scaffolding
 - Dialog behavior under a real `run_test()`/`make_chrys_app`: `/buddy config`
   opens; tabs switch; rename commits; mute toggles; reply-model select
   persists to a temp config dir; import copies the file and updates the
-  preview; remove falls back to built-in; Close dismisses the dialog.
+  preview; remove falls back to built-in; Esc (or a click outside) dismisses
+  the dialog.
 - `BuddyConfigPorts` adapter unit tests: threaded save, `OSError` path.
 - `actions.rehatch` unit test paired with `hatch`: with a record present the
   record is replaced (not reused); with none it is a no-op.
