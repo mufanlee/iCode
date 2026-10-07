@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,8 +19,10 @@ from chrys.kernel import (
     ChatClientException,
     ChatResponse,
     ChatResponseUpdate,
+    ConsumedInjectionMessageProbe,
     Content,
     FunctionTool,
+    LoopRecorder,
     Message,
     ResponseStream,
     StallExhaustedAction,
@@ -30,13 +32,15 @@ from chrys.kernel import (
     wire_progress_scope,
 )
 from chrys.kernel import loop as loop_module
-from chrys.kernel.loop import ConsumedInjectionMessageProbe, LoopRecorder
 from chrys.kernel.middleware import ChatMiddleware, ChatMiddlewareLayer
 from chrys.service.agent_middleware.injection import InjectionMiddleware
 from chrys.service.agent_middleware.response_validation import ResponseValidationMiddleware
 from chrys.service.agent_middleware.system_reminder import SystemReminderMiddleware
 from chrys.service.agent_middleware.system_reminder import wrap_system_reminder as _wrap
 from tests.support.transcript_invariants import InvariantCheckedToolLoopLayer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @pytest.fixture(autouse=True)
@@ -75,6 +79,7 @@ class _Policy:
     stall_timeout_seconds: float | None = None
     stall_max_retries: int = 0
     stall_exhausted_action: StallExhaustedAction = StallExhaustedAction.BLOCKING_FALLBACK
+    hosted_commits_in_flight: Callable[[], tuple[str, ...]] | None = None
     events: list[tuple[str, int, int, int, BaseException]] = field(default_factory=list)
     before_retry_calls: int = 0
     before_retry_hook: Any = None

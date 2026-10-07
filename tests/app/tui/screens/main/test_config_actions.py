@@ -44,6 +44,7 @@ from chrys.service.profiles.models.registry import ModelProfileRegistry
 from chrys.service.profiles.models.schema import ModelProfile, is_model_profile_selectable
 from tests.app.tui.screens._model_config_support import _model_config_result_events
 from tests.support.event_capture import capture_event_sequence
+from tests.support.tui_helpers import discard_worker
 
 
 @pytest.fixture(autouse=True)
@@ -115,12 +116,9 @@ def _buddy_config_coordinator() -> object:
 
 def _callbacks() -> RuntimeConfigCallbacks:
     return RuntimeConfigCallbacks(
-        set_approval_mode=lambda _arg: None,
-        start_agent_profile_switch=lambda _profile: None,
-        start_model_config_result=lambda _result: None,
+        start_worker=discard_worker,
         set_profile_display=lambda _profile: None,
         update_subtitle=lambda: None,
-        start_agent_config_result=lambda _result: None,
         debug=lambda _key, _message="": None,
         notification_service=_notification_service,
         settings_coordinator=_settings_coordinator,
@@ -471,7 +469,6 @@ def test_canonical_model_profile_id_does_not_fall_back_to_process_env(
 
 
 def test_tui_canonical_active_model_profile_id_resolves_explicit_profile_name() -> None:
-    from chrys.app.tui.screens.main.screen import _canonical_active_model_profile_id
     from chrys.service.profiles.models.registry import ModelProfileRegistry
     from chrys.service.profiles.models.schema import ModelProfile
 
@@ -484,7 +481,6 @@ def test_tui_canonical_active_model_profile_id_resolves_explicit_profile_name() 
 def test_tui_canonical_active_model_profile_id_prefers_explicit_active_profile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from chrys.app.tui.screens.main.screen import _canonical_active_model_profile_id
     from chrys.service.profiles.models.registry import ModelProfileRegistry
     from chrys.service.profiles.models.schema import ModelProfile
 
@@ -525,7 +521,7 @@ def test_view_adapter_open_runtime_details_pushes_runtime_details_dialog() -> No
     screen = SimpleNamespace(app=SimpleNamespace(push_screen=push_screen))
     details = AgentRuntimeDetails()
 
-    MainScreenViewAdapter(cast(Any, screen)).open_runtime_details(details)
+    MainScreenViewAdapter(cast(Any, screen), state=MainScreenState()).open_runtime_details(details)
 
     assert len(pushed) == 1
     assert isinstance(pushed[0], RuntimeDetailsDialog)
@@ -619,11 +615,10 @@ def _confirmation_session_handler(state: MainScreenState, services: MainScreenSe
             set_profile_display=_noop,
             set_active_model_profile_id=_set_active_model_profile_id,
             set_workspace_cwd=_noop,
-            set_workspace_original_cwd=_noop,
             update_subtitle=_noop,
             update_toc=_noop,
             clear_suggestion_file_cache=_noop,
-            start_session_restore=_noop,
+            start_worker=discard_worker,
             post_gc_message=_noop,
             debug=_noop,
             refresh_model_indicator=_noop,

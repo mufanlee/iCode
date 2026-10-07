@@ -39,7 +39,7 @@ def install_frame(species: Species, frame: int, source: Path) -> None:
     """Copy *source* into *species*'s *frame* slot, atomically.
 
     Raises:
-        OSError: *source* cannot be read, or is not a decodable image, or the
+        OSError: *source* cannot be read, or is not a decodable PNG, or the
             destination cannot be written. Nothing is written on failure.
     """
     from io import BytesIO
@@ -49,7 +49,8 @@ def install_frame(species: Species, frame: int, source: Path) -> None:
     destination = frame_path(species, frame)
     payload = Path(source).read_bytes()
     try:
-        with Image.open(BytesIO(payload)) as opened:
+        # Custom artwork is PNG by contract; no other decoder ever reads this file.
+        with Image.open(BytesIO(payload), formats=("PNG",)) as opened:
             opened.verify()
     except (SyntaxError, ValueError, Image.DecompressionBombError) as exc:
         raise OSError(f"not a decodable image: {source}") from exc
