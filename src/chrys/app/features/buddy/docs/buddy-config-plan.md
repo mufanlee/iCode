@@ -522,7 +522,9 @@ if TYPE_CHECKING:
     from chrys.app.tui.i18n import LocaleController
     from chrys.app.tui.screens.buddy_config.ports import BuddyConfigPorts
 
-_EMPTY_HINT = msg("tui.buddy_config.empty.hint", fallback="Nothing has hatched yet.\n\n/buddy hatch finds out what is in the egg.")
+_EMPTY_HINT = msg(
+    "tui.buddy_config.empty.hint", fallback="Nothing has hatched yet.\n\n/buddy hatch finds out what is in the egg."
+)
 _HATCH = msg("tui.buddy_config.action.hatch", fallback="Hatch")
 
 
@@ -1358,6 +1360,7 @@ Expected: FAIL — `config` absent / dialog not opened.
            )
            self._buddy_config_coordinator_instance = instance
        return instance
+
 
    def open_buddy_config(self) -> None:
        self._config_actions.open_buddy_config()

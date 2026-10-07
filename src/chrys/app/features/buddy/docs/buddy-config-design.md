@@ -92,11 +92,12 @@ turns failures into toasts. The reads stay on the event loop, where they are a
 
 ```python
 class FrameState(StrEnum):
-    BUILTIN = "builtin"      # no custom file; the built-in artwork draws
-    CUSTOM = "custom"        # a valid <species>_<frame>.png is installed
+    BUILTIN = "builtin"  # no custom file; the built-in artwork draws
+    CUSTOM = "custom"  # a valid <species>_<frame>.png is installed
+
 
 class BuddyConfigPorts(Protocol):
-    def buddy(self) -> Buddy | None: ...          # None before one has hatched
+    def buddy(self) -> Buddy | None: ...  # None before one has hatched
     # Read-only identity/progress come from buddy(); this is the Appearance
     # pane's only read.
     def frame_state(self, frame: int) -> FrameState: ...
@@ -104,14 +105,14 @@ class BuddyConfigPorts(Protocol):
     async def rename(self, name: str) -> None: ...
     async def set_muted(self, muted: bool) -> None: ...
     async def set_reply_model(self, model_id: str) -> None: ...
-    async def hatch(self) -> None: ...            # draw the first buddy (the empty-state button)
+    async def hatch(self) -> None: ...  # draw the first buddy (the empty-state button)
     async def import_frame(self, frame: int, source: Path) -> None: ...
     async def remove_frame(self, frame: int) -> None: ...
     # Reply-model field
-    def reply_model(self) -> str: ...                    # the stored settings.buddy_model; "" means "follow active"
+    def reply_model(self) -> str: ...  # the stored settings.buddy_model; "" means "follow active"
     def model_options(self) -> list[tuple[str, str]]: ...  # (value, label); the pane labels the ("", …) entry "follow"
     # Chrome
-    def open_assets_dir(self) -> None: ...               # opens assets_dir() in the OS file manager
+    def open_assets_dir(self) -> None: ...  # opens assets_dir() in the OS file manager
     def notify(self, message: MessageRef | str, *, severity: str, timeout: float) -> None: ...
 ```
 
